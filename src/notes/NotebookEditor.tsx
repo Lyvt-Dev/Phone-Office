@@ -1,4 +1,11 @@
-import { memo, useRef, useState, type PointerEvent } from "react";
+import {
+  memo,
+  useRef,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  type PointerEvent,
+} from "react";
 import {
   PenLine,
   Highlighter,
@@ -9,7 +16,18 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
+  LayoutGrid,
+  MousePointer2,
+  Copy,
+  ClipboardPaste,
+  Trash2,
+  Move,
+  Minus,
+  ZoomIn,
+  Ruler,
 } from "lucide-react";
+import { PageOverview } from "./PageOverview";
+import { clampZoom, intersectsSelection, translateStrokes } from "./operations";
 import { NoteSettings } from "./NoteSettings";
 import {
   newPage,
@@ -35,6 +53,7 @@ interface Props {
   onTheme: () => void;
   onPreview: () => void;
   onMoreExports: () => void;
+  onExportPdf: () => void;
 }
 export function NotebookEditor({
   notebook,
@@ -46,11 +65,75 @@ export function NotebookEditor({
   onTheme,
   onPreview,
   onMoreExports,
+  onExportPdf,
 }: Props) {
   const [index, setIndex] = useState(0),
-    [tool, setTool] = useState<"pen" | "marker" | "eraser">("pen");
+    [tool, setTool] = useState<
+      "pen" | "marker" | "eraser" | "select" | "line" | "move"
+    >("pen");
   const prefs = notebook.preferences || defaultNotePreferences;
-  const { color, width, finger, zoom } = prefs;
+  const { color, width, finger } = prefs;
+  const [zoom, setZoom] = useState(prefs.zoom);
+  const [overview, setOverview] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [clipboard, setClipboard] = useState<InkStroke[]>([]);
+  const [rectangle, setRectangle] = useState<{
+    a: ReturnType<typeof inkPoint>;
+    b: ReturnType<typeof inkPoint>;
+  } | null>(null);
+  const selecting = useRef<{
+    pointer: number;
+    pointerType: string;
+    a: ReturnType<typeof inkPoint>;
+    b: ReturnType<typeof inkPoint>;
+    move: boolean;
+  } | null>(null);
+  const latest = useRef(notebook);
+  latest.current = notebook;
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const fingers = useRef(new Map<number, { x: number; y: number }>());
+  const gesture = useRef<{
+    distance: number;
+    zoom: number;
+    anchorX: number;
+    anchorY: number;
+  } | null>(null);
+  const anchor = useRef<{
+    x: number;
+    y: number;
+    clientX: number;
+    clientY: number;
+  } | null>(null);
+  const sheet = useRef<SVGSVGElement>(null);
+  useEffect(() => {
+    if (!fingers.current.size) setZoom(prefs.zoom);
+  }, [prefs.zoom]);
+  useLayoutEffect(() => {
+    const a = anchor.current,
+      r = sheet.current?.getBoundingClientRect();
+    if (a && r && scroller.current) {
+      scroller.current.scrollLeft += r.left + a.x * r.width - a.clientX;
+      scroller.current.scrollTop += r.top + a.y * r.height - a.clientY;
+      anchor.current = null;
+    }
+  }, [zoom]);
+  const saveZoom = (value: number) => {
+    const n = latest.current;
+    onChange({
+      ...n,
+      preferences: {
+        ...(n.preferences || defaultNotePreferences),
+        zoom: value,
+      },
+    });
+  };
+  const setViewZoom = (value: number) => {
+    const z = clampZoom(value);
+    setZoom(z);
+    zoomRef.current = z;
+    saveZoom(z);
+  };
   const [settings, setSettings] = useState(false);
   const updatePreferences = (change: Partial<NotePreferences>) =>
     onChange({ ...notebook, preferences: { ...prefs, ...change } });
@@ -60,13 +143,13 @@ export function NotebookEditor({
     [future, setFuture] = useState<NotePage[]>([]);
   const pending = useRef<{
     pointer: number;
+    pointerType: string;
     stroke: InkStroke | null;
     page: NotePage;
     before: NotePage;
     erase: boolean;
   } | null>(null);
-  const touch = useRef<{ pointer: number; x: number; y: number } | null>(null),
-    scroller = useRef<HTMLDivElement>(null);
+  const scroller = useRef<HTMLDivElement>(null);
   const page = notebook.pages[Math.min(index, notebook.pages.length - 1)];
   function commit(next: NotePage) {
     setPast((prev) => [...prev.slice(-29), page]);
@@ -97,15 +180,53 @@ export function NotebookEditor({
     }
   }
   function down(e: PointerEvent<SVGSVGElement>) {
-    if (pending.current) return; // Ignore palms and other pointers while a stroke is active.
-    if (e.pointerType === "touch" && !finger) {
-      touch.current = { pointer: e.pointerId, x: e.clientX, y: e.clientY };
+    if (e.pointerType !== "touch" && gesture.current) return;
+    if (e.pointerType === "touch") {
+      if (
+        (pending.current && pending.current.pointerType !== "touch") ||
+        (selecting.current && selecting.current.pointerType !== "touch")
+      )
+        return;
+      e.preventDefault();
       capture(e);
-      return;
+      fingers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (fingers.current.size >= 2) {
+        // The second finger converts finger drawing into a gesture, discarding only its unfinished draft.
+        pending.current = null;
+        selecting.current = null;
+        setDraft(null);
+        setErasedPage(null);
+        setRectangle(null);
+        const [a, b] = [...fingers.current.values()],
+          r = sheet.current!.getBoundingClientRect();
+        gesture.current = {
+          distance: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)),
+          zoom: zoomRef.current,
+          anchorX: ((a.x + b.x) / 2 - r.left) / r.width,
+          anchorY: ((a.y + b.y) / 2 - r.top) / r.height,
+        };
+        return;
+      }
+      if (!finger || gesture.current) return;
     }
+    if (pending.current) return; // Ignore palms and other pointers while a stroke is active.
     if (e.pointerType === "mouse" && e.button !== 0) return;
     e.preventDefault();
-    touch.current = null;
+    if (tool === "select" || tool === "move") {
+      selecting.current = {
+        pointer: e.pointerId,
+        pointerType: e.pointerType,
+        a: position(e),
+        b: position(e),
+        move: tool === "move",
+      };
+      capture(e);
+      if (tool === "select") {
+        setSelected([]);
+        setRectangle({ a: position(e), b: position(e) });
+      }
+      return;
+    }
     if (
       page.strokes.length >= 2000 ||
       notebook.pages.reduce(
@@ -130,6 +251,7 @@ export function NotebookEditor({
         };
     pending.current = {
       pointer: e.pointerId,
+      pointerType: e.pointerType,
       stroke,
       page,
       before: page,
@@ -148,18 +270,51 @@ export function NotebookEditor({
     setErasedPage(current.page);
   }
   function move(e: PointerEvent<SVGSVGElement>) {
-    const cur = pending.current;
-    if (!cur) {
-      if (touch.current?.pointer === e.pointerId) {
-        scroller.current?.scrollBy(
-          touch.current.x - e.clientX,
-          touch.current.y - e.clientY,
+    const prior = fingers.current.get(e.pointerId);
+    if (prior) {
+      fingers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (gesture.current && fingers.current.size >= 2) {
+        e.preventDefault();
+        const [a, b] = [...fingers.current.values()],
+          g = gesture.current;
+        const z = clampZoom(
+          (g.zoom * Math.hypot(a.x - b.x, a.y - b.y)) / g.distance,
         );
-        touch.current.x = e.clientX;
-        touch.current.y = e.clientY;
+        const midX = (a.x + b.x) / 2,
+          midY = (a.y + b.y) / 2;
+        anchor.current = {
+          x: g.anchorX,
+          y: g.anchorY,
+          clientX: midX,
+          clientY: midY,
+        };
+        if (z === zoomRef.current) {
+          const r = sheet.current!.getBoundingClientRect();
+          scroller.current?.scrollBy(
+            r.left + g.anchorX * r.width - midX,
+            r.top + g.anchorY * r.height - midY,
+          );
+          anchor.current = null;
+        } else {
+          zoomRef.current = z;
+          setZoom(z);
+        }
+        return;
       }
+      if (!pending.current && !selecting.current) {
+        scroller.current?.scrollBy(prior.x - e.clientX, prior.y - e.clientY);
+        return;
+      }
+    }
+    const selection = selecting.current;
+    if (selection?.pointer === e.pointerId) {
+      e.preventDefault();
+      selection.b = position(e);
+      if (!selection.move) setRectangle({ a: selection.a, b: selection.b });
       return;
     }
+    const cur = pending.current;
+    if (!cur) return;
     if (cur.pointer !== e.pointerId) return;
     e.preventDefault();
     const samples = e.nativeEvent.getCoalescedEvents?.() || [];
@@ -169,13 +324,53 @@ export function NotebookEditor({
       else if (cur.stroke && cur.stroke.points.length < 3000) {
         const last = cur.stroke.points.at(-1)!;
         if (Math.hypot(p.x - last.x, p.y - last.y) > 0.5)
-          cur.stroke = { ...cur.stroke, points: [...cur.stroke.points, p] };
+          cur.stroke = {
+            ...cur.stroke,
+            points:
+              tool === "line"
+                ? [cur.stroke.points[0], p]
+                : [...cur.stroke.points, p],
+          };
       }
     }
     if (cur.stroke) setDraft(cur.stroke);
   }
   function end(e: PointerEvent<SVGSVGElement>, cancel = false) {
-    if (touch.current?.pointer === e.pointerId) touch.current = null;
+    if (fingers.current.has(e.pointerId)) {
+      fingers.current.delete(e.pointerId);
+      if (gesture.current) {
+        saveZoom(zoomRef.current);
+        if (!fingers.current.size) gesture.current = null;
+        return;
+      }
+    }
+    const selection = selecting.current;
+    if (selection?.pointer === e.pointerId) {
+      selecting.current = null;
+      setRectangle(null);
+      if (!cancel) {
+        if (selection.move) {
+          const moved = translateStrokes(
+            page.strokes.filter((s) => selected.includes(s.id)),
+            selection.b.x - selection.a.x,
+            selection.b.y - selection.a.y,
+          );
+          if (moved.length)
+            commit({
+              ...page,
+              strokes: page.strokes.map(
+                (s) => moved.find((m) => m.id === s.id) || s,
+              ),
+            });
+        } else
+          setSelected(
+            page.strokes
+              .filter((s) => intersectsSelection(s, selection.a, selection.b))
+              .map((s) => s.id),
+          );
+      }
+      return;
+    }
     const cur = pending.current;
     if (!cur || cur.pointer !== e.pointerId) return;
     pending.current = null;
@@ -222,30 +417,40 @@ export function NotebookEditor({
           role="toolbar"
           aria-label="Schreibwerkzeuge"
         >
-          {(["pen", "marker", "eraser"] as const).map((t, i) => {
-            const Icon = [PenLine, Highlighter, Eraser][i];
-            const label = ["Stift", "Textmarker", "Radierer"][i];
-            return (
-              <button
-                key={t}
-                className="note-icon"
-                aria-label={label}
-                title={label}
-                aria-pressed={tool === t}
-                onClick={() => setTool(t)}
-              >
-                <Icon aria-hidden="true" />
-                {t !== "eraser" && (
-                  <i
-                    className="ink-color-dot"
-                    aria-hidden="true"
-                    style={{ background: color }}
-                  />
-                )}
-                <span>{label}</span>
-              </button>
-            );
-          })}
+          {(["pen", "marker", "eraser", "select", "line"] as const).map(
+            (t, i) => {
+              const Icon = [PenLine, Highlighter, Eraser, MousePointer2, Ruler][
+                i
+              ];
+              const label = [
+                "Stift",
+                "Textmarker",
+                "Radierer",
+                "Handschrift auswählen",
+                "Gerade Linie",
+              ][i];
+              return (
+                <button
+                  key={t}
+                  className="note-icon"
+                  aria-label={label}
+                  title={label}
+                  aria-pressed={tool === t}
+                  onClick={() => setTool(t)}
+                >
+                  <Icon aria-hidden="true" />
+                  {(t === "pen" || t === "marker") && (
+                    <i
+                      className="ink-color-dot"
+                      aria-hidden="true"
+                      style={{ background: color }}
+                    />
+                  )}
+                  <span>{label}</span>
+                </button>
+              );
+            },
+          )}
           <span className="ink-tool-divider" />
           <button
             className="note-icon"
@@ -278,12 +483,21 @@ export function NotebookEditor({
         <div className="note-pages" aria-label="Notizseiten">
           <button
             className="note-icon"
+            aria-label="Seitenübersicht"
+            title="Seitenübersicht"
+            onClick={() => setOverview(true)}
+          >
+            <LayoutGrid />
+          </button>
+          <button
+            className="note-icon"
             aria-label="Vorherige Notizseite"
             disabled={index === 0}
             onClick={() => {
               setIndex(index - 1);
               setPast([]);
               setFuture([]);
+              setSelected([]);
             }}
           >
             <ChevronLeft aria-hidden="true" />
@@ -295,6 +509,7 @@ export function NotebookEditor({
               setIndex(+e.target.value);
               setPast([]);
               setFuture([]);
+              setSelected([]);
             }}
           >
             {notebook.pages.map((p, i) => (
@@ -311,6 +526,7 @@ export function NotebookEditor({
               setIndex(index + 1);
               setPast([]);
               setFuture([]);
+              setSelected([]);
             }}
           >
             <ChevronRight aria-hidden="true" />
@@ -325,30 +541,131 @@ export function NotebookEditor({
               setIndex(notebook.pages.length);
               setPast([]);
               setFuture([]);
+              setSelected([]);
             }}
           >
             <Plus aria-hidden="true" />
           </button>
         </div>
       </div>
+      {selected.length > 0 && (
+        <div
+          className="selection-actions"
+          role="toolbar"
+          aria-label="Handschrift-Auswahl"
+        >
+          <span>{selected.length} Striche</span>
+          <button
+            onClick={() => {
+              setTool("move");
+            }}
+            aria-pressed={tool === "move"}
+          >
+            <Move size={20} />
+            Verschieben
+          </button>
+          <button
+            onClick={() =>
+              setClipboard(page.strokes.filter((s) => selected.includes(s.id)))
+            }
+          >
+            <Copy size={20} />
+            Kopieren
+          </button>
+          <button
+            onClick={() => {
+              commit({
+                ...page,
+                strokes: page.strokes.filter((s) => !selected.includes(s.id)),
+              });
+              setSelected([]);
+            }}
+          >
+            <Trash2 size={20} />
+            Auswahl löschen
+          </button>
+          <button
+            onClick={() => {
+              setSelected([]);
+              setTool("pen");
+            }}
+          >
+            Fertig
+          </button>
+        </div>
+      )}
+      {clipboard.length > 0 && (
+        <div className="selection-actions">
+          <button
+            onClick={() => {
+              const count =
+                notebook.pages
+                  .flatMap((p) => p.strokes)
+                  .reduce((n, s) => n + s.points.length, 0) +
+                clipboard.reduce((n, s) => n + s.points.length, 0);
+              if (
+                page.strokes.length + clipboard.length > 2000 ||
+                count > 200000
+              ) {
+                onNotice("Notizgrenze erreicht.");
+                return;
+              }
+              const copied = translateStrokes(clipboard, 20, 20).map((s) => ({
+                ...s,
+                id: crypto.randomUUID(),
+              }));
+              commit({ ...page, strokes: [...page.strokes, ...copied] });
+              setSelected(copied.map((s) => s.id));
+            }}
+          >
+            <ClipboardPaste size={20} />
+            Handschrift einfügen
+          </button>
+        </div>
+      )}
+      {overview && (
+        <PageOverview
+          notebook={notebook}
+          current={page.id}
+          onNotice={onNotice}
+          onClose={() => setOverview(false)}
+          onChange={(n, id) => {
+            onChange(n);
+            setIndex(
+              Math.max(
+                0,
+                n.pages.findIndex((p) => p.id === id),
+              ),
+            );
+            setPast([]);
+            setFuture([]);
+            setSelected([]);
+          }}
+        />
+      )}
       {settings && (
         <NoteSettings
           notebook={notebook}
           page={page}
           preferences={prefs}
           dark={dark}
-          onPreferences={updatePreferences}
+          onPreferences={(p) => {
+            if (p.zoom !== undefined) setZoom(p.zoom);
+            updatePreferences(p);
+          }}
           onSubject={(subject) => onChange({ ...notebook, subject })}
           onPaper={(paper) => commit({ ...page, paper })}
           onClose={() => setSettings(false)}
           onExportPage={() => onExportPage(page)}
           onPreview={onPreview}
           onMoreExports={onMoreExports}
+          onExportPdf={onExportPdf}
           onTheme={onTheme}
         />
       )}
       <div className="ink-scroll" ref={scroller}>
         <svg
+          ref={sheet}
           className="ink-sheet"
           role="img"
           aria-label={`Schreibfläche Seite ${index + 1}`}
@@ -384,12 +701,37 @@ export function NotebookEditor({
               fill={`url(#paper-${page.id})`}
             />
           )}
+          {page.background && (
+            <image
+              href={page.background}
+              width={PAGE_WIDTH}
+              height={PAGE_HEIGHT}
+              pointerEvents="none"
+            />
+          )}
           {[
             ...(erasedPage?.strokes || page.strokes),
             ...(draft ? [draft] : []),
           ].map((s) => (
-            <InkPath key={s.id} stroke={s} />
+            <g
+              key={s.id}
+              className={selected.includes(s.id) ? "selected-ink" : ""}
+            >
+              <InkPath stroke={s} />
+            </g>
           ))}
+          {rectangle && (
+            <rect
+              x={Math.min(rectangle.a.x, rectangle.b.x)}
+              y={Math.min(rectangle.a.y, rectangle.b.y)}
+              width={Math.abs(rectangle.a.x - rectangle.b.x)}
+              height={Math.abs(rectangle.a.y - rectangle.b.y)}
+              fill="#2563eb18"
+              stroke="#2563eb"
+              strokeDasharray="8 5"
+              pointerEvents="none"
+            />
+          )}
         </svg>
       </div>
       <div className="note-status">
@@ -397,6 +739,28 @@ export function NotebookEditor({
           {notebook.subject || "Notizbuch"} · Seite {index + 1} /{" "}
           {notebook.pages.length} · {page.strokes.length} Striche
         </span>
+        <div className="note-zoom">
+          <button
+            aria-label="Notiz verkleinern"
+            disabled={zoom <= 50}
+            onClick={() => setViewZoom(zoom - 25)}
+          >
+            <Minus size={18} />
+          </button>
+          <button
+            aria-label="Notizzoom zurücksetzen"
+            onClick={() => setViewZoom(100)}
+          >
+            {zoom}%
+          </button>
+          <button
+            aria-label="Notiz vergrößern"
+            disabled={zoom >= 300}
+            onClick={() => setViewZoom(zoom + 25)}
+          >
+            <ZoomIn size={18} />
+          </button>
+        </div>
         <span>{saveStatus}</span>
       </div>
     </section>

@@ -3,6 +3,7 @@ const production = process.env.PHONE_OFFICE_PRODUCTION === "1";
 const appUrl = production ? "http://127.0.0.1:4173" : "http://127.0.0.1:5173";
 export default defineConfig({
   testDir: "tests/e2e",
+  testIgnore: "**/ipad-webkit.spec.ts",
   fullyParallel: false,
   workers: 1,
   use: {

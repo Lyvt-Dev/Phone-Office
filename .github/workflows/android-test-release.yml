@@ -6,6 +6,7 @@ on:
       - main
     tags:
       - "v*-android-test*"
+      - "v0.5.0"
   workflow_dispatch:
 
 permissions:
@@ -82,6 +83,7 @@ jobs:
       - name: Verify and package APK
         run: |
           mkdir -p artifacts
+          (cd dist && zip -qr ../artifacts/phone-office-web-ipad.zip .)
           cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/phone-office-android-test.apk
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs artifacts/phone-office-android-test.apk > artifacts/signature.txt
           expected=$(sha256sum "$RUNNER_TEMP/android-test-certificate.der" | cut -d ' ' -f 1)
@@ -103,7 +105,7 @@ jobs:
             exit 1
           fi
           cd artifacts
-          sha256sum phone-office-android-test.apk > SHA256SUMS.txt
+          sha256sum phone-office-android-test.apk phone-office-web-ipad.zip > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
           name: phone-office-android-test
@@ -123,8 +125,12 @@ jobs:
         with:
           name: phone-office-android-test
           path: artifacts
-      - name: Publish test prerelease
+      - name: Publish project release or test prerelease
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android-test.apk artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt --repo "$GITHUB_REPOSITORY" --verify-tag --prerelease --title "Phone Office Android-Test $GITHUB_REF_NAME" --notes-file docs/ANDROID-TEST-RELEASE.md
+          if [ "$GITHUB_REF_NAME" = "v0.5.0" ]; then
+            gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android-test.apk artifacts/phone-office-web-ipad.zip artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt --repo "$GITHUB_REPOSITORY" --verify-tag --title "Phone Office 0.5.0" --notes-file docs/RELEASE-0.5.0.md
+          else
+            gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android-test.apk artifacts/phone-office-web-ipad.zip artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt --repo "$GITHUB_REPOSITORY" --verify-tag --prerelease --title "Phone Office Android-Test $GITHUB_REF_NAME" --notes-file docs/ANDROID-TEST-RELEASE.md
+          fi

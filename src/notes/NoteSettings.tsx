@@ -26,6 +26,7 @@ interface Props {
   onExportPage: () => void;
   onPreview: () => void;
   onMoreExports: () => void;
+  onExportPdf: () => void;
   onTheme: () => void;
 }
 export function NoteSettings(p: Props) {
@@ -150,6 +151,7 @@ export function NoteSettings(p: Props) {
             Papier
             <select
               aria-label="Notizpapier"
+              disabled={!!p.page.background}
               value={p.page.paper}
               onChange={(e) => p.onPaper(e.target.value as Paper)}
             >
@@ -158,6 +160,12 @@ export function NoteSettings(p: Props) {
               <option value="plain">Leer</option>
             </select>
           </label>
+          {p.page.background && (
+            <p>
+              Der PDF-Hintergrund bleibt unverändert. Papierwahl gilt für leere
+              Notizseiten.
+            </p>
+          )}
           <label>
             <ZoomIn aria-hidden="true" />
             Zoom
@@ -166,11 +174,24 @@ export function NoteSettings(p: Props) {
               value={p.preferences.zoom}
               onChange={(e) => p.onPreferences({ zoom: +e.target.value })}
             >
-              {[80, 100, 125, 150].map((n) => (
-                <option key={n} value={n}>
-                  {n}%
-                </option>
-              ))}
+              {[
+                ...new Set([
+                  50,
+                  80,
+                  100,
+                  125,
+                  150,
+                  200,
+                  300,
+                  p.preferences.zoom,
+                ]),
+              ]
+                .sort((a, b) => a - b)
+                .map((n) => (
+                  <option key={n} value={n}>
+                    {n}%
+                  </option>
+                ))}
             </select>
           </label>
         </fieldset>
@@ -188,8 +209,9 @@ export function NoteSettings(p: Props) {
             />
           </label>
           <p>
-            Ausgeschaltet verschiebt der Finger die Seite. Der Stift schreibt
-            weiterhin. Der Radierer entfernt ganze Striche.
+            Zwei Finger zoomen und verschieben die Seite. Ausgeschaltet
+            verschiebt ein Finger die Seite. Der Stift schreibt weiterhin. Der
+            Radierer entfernt ganze Striche.
           </p>
         </fieldset>
         <fieldset>
@@ -236,6 +258,16 @@ export function NoteSettings(p: Props) {
           >
             <Download aria-hidden="true" />
             Seite als SVG exportieren
+          </button>
+          <button
+            className="note-setting-action"
+            onClick={() => {
+              p.onClose();
+              p.onExportPdf();
+            }}
+          >
+            <FileOutput aria-hidden="true" />
+            Handschriftseiten als PDF
           </button>
           <button
             className="note-setting-action"

@@ -1,3 +1,6 @@
+import { version } from "../package.json";
+import { loadDocuments, saveDocuments } from "./storage/database";
+import { SamsungImport } from "./notes/SamsungImport";
 import { NotebookEditor } from "./notes/NotebookEditor";
 import { newNotebook, pageSvg, type NotePage } from "./notes/model";
 import { exportNote, importNote } from "./notes/format";
@@ -98,7 +101,9 @@ const initial = () => {
 };
 export default function App() {
   const native = Capacitor.isNativePlatform();
-  const [boot] = useState(initial);
+  const [boot, setBoot] = useState(initial);
+  const [storageReady, setStorageReady] = useState(false);
+  const [migration, setMigration] = useState(false);
   const [docs, setDocs] = useState<OfficeDocument[]>(boot.docs);
   const [active, setActive] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -118,7 +123,12 @@ export default function App() {
   const [toolGroup, setToolGroup] = useState("text");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(boot.error);
-  const [saveStatus, setSaveStatus] = useState("Lokal gespeichert");
+  const [storedSaveStatus, setSaveStatus] = useState("Lokal gespeichert");
+  const [lastSaved, setLastSaved] = useState<OfficeDocument[] | null>(null);
+  const saveStatus =
+    storedSaveStatus === "Lokal gespeichert" && lastSaved !== docs
+      ? "Wird lokal gespeichert …"
+      : storedSaveStatus;
   const [sidebar, setSidebar] = useState(false);
   const [find, setFind] = useState("");
   const [replace, setReplace] = useState("");
@@ -160,17 +170,48 @@ export default function App() {
     onSelectionUpdate: () => refresh((n) => n + 1),
   });
   useEffect(() => {
-    if (boot.error) return;
-    try {
-      localStorageAdapter.save(docs);
-      setSaveStatus("Lokal gespeichert");
-    } catch {
-      setSaveStatus("Speichern fehlgeschlagen");
-      setNotice(
-        "Der lokale Speicher ist voll oder gesperrt. Bitte das Dokument jetzt exportieren.",
-      );
-    }
-  }, [docs, boot.error]);
+    let cancelled = false;
+    loadDocuments()
+      .then((d) => {
+        if (!cancelled) {
+          setDocs(d);
+          setBoot({ docs: d, error: "" });
+          setStorageReady(true);
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setBoot({ docs: [], error: (e as Error).message });
+          setNotice((e as Error).message);
+          setSaveStatus("Wiederherstellung blockiert");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  useEffect(() => {
+    if (!storageReady || boot.error) return;
+    let cancelled = false;
+    setSaveStatus("Wird lokal gespeichert …");
+    saveDocuments(docs)
+      .then(() => {
+        if (!cancelled) {
+          setLastSaved(docs);
+          setSaveStatus("Lokal gespeichert");
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSaveStatus("Speichern fehlgeschlagen");
+        setNotice(
+          "Der lokale Speicher ist voll oder gesperrt. Bitte das Dokument jetzt exportieren.",
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [docs, boot.error, storageReady]);
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
     try {
@@ -241,8 +282,8 @@ export default function App() {
     setSidebar(false);
   };
   const newDoc = (title?: string, html?: string) => {
-    if (boot.error) {
-      setNotice(boot.error);
+    if (!storageReady || boot.error) {
+      setNotice(boot.error || "Dokumentspeicher wird noch geöffnet.");
       return;
     }
     const d = createDocument(title, html);
@@ -250,8 +291,8 @@ export default function App() {
     open(d);
   };
   function newNote() {
-    if (boot.error) {
-      setNotice(boot.error);
+    if (!storageReady || boot.error) {
+      setNotice(boot.error || "Dokumentspeicher wird noch geöffnet.");
       return;
     }
     const d = {
@@ -282,13 +323,63 @@ export default function App() {
       setBusy(false);
     }
   }
+  async function notePdfExport() {
+    if (!doc?.notebook || busy) return;
+    const extra = wordCount(doc.html)
+      ? " Getippter Text ist separat und fehlt in dieser PDF."
+      : "";
+    if (
+      !window.confirm(
+        "PDF enthält alle Handschriftseiten als Bilder, inklusive PDF-Hintergründen. Handschrift ist darin nicht mehr bearbeitbar oder durchsuchbar." +
+          extra +
+          " Für eine bearbeitbare Sicherung .pnote verwenden. Als neue PDF ausgeben?",
+      )
+    )
+      return;
+    setBusy(true);
+    try {
+      const { exportNotebookPdf } = await import("./notes/pdf");
+      await saveExport(
+        await exportNotebookPdf(doc.notebook),
+        (doc.title || "Notiz").replace(/[/\\:*?"<>|]/g, "_").slice(0, 120) +
+          ".pdf",
+      );
+    } catch (e) {
+      setNotice("PDF-Ausgabe fehlgeschlagen: " + (e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   async function importDocument(file?: File) {
-    if (!file) return;
-    if (boot.error) {
-      setNotice(boot.error);
+    if (!file || busy) return;
+    if (!storageReady || boot.error) {
+      setNotice(boot.error || "Dokumentspeicher wird noch geöffnet.");
       return;
     }
     try {
+      if (file.name.toLowerCase().endsWith(".pdf")) {
+        if (
+          !window.confirm(
+            "PDF als neue Schulnotiz öffnen? Seiten werden lokal als Bildhintergründe gerendert und können mit Handschrift ergänzt werden. PDF-Text, Formulare und Links sind nicht direkt bearbeitbar. Darstellung oder Schriftarten können abweichen; Originaldatei bleibt erhalten.",
+          )
+        )
+          return;
+        setBusy(true);
+        setNotice("PDF wird lokal geöffnet …");
+        const { importPdf } = await import("./notes/pdf");
+        const notebook = await importPdf(file);
+        const d = {
+          ...createDocument(file.name.replace(/\.pdf$/i, "")),
+          format: "NOTIZ",
+          notebook,
+        };
+        setDocs((prev) => [d, ...prev]);
+        open(d);
+        setNotice(
+          "PDF als neue Notizkopie geöffnet. Bitte Darstellung mit dem Original vergleichen.",
+        );
+        return;
+      }
       if (file.name.toLowerCase().endsWith(".pnote")) {
         if (file.size > 20 * 1024 * 1024)
           throw new Error("Notizdatei ist zu groß (maximal 20 MB).");
@@ -318,8 +409,10 @@ export default function App() {
       );
     } catch (e) {
       setNotice((e as Error).message);
+    } finally {
+      setBusy(false);
+      if (fileInput.current) fileInput.current.value = "";
     }
-    if (fileInput.current) fileInput.current.value = "";
   }
   async function download(format: "html" | "txt" | WriterFormat) {
     if (!doc || !editor || busy) return;
@@ -397,8 +490,16 @@ export default function App() {
     setModal(null);
   }
   const filtered = docs
+    .filter((d) => section !== "notes" || !!d.notebook)
     .filter((d) =>
-      d.title.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
+      [
+        d.title,
+        d.notebook?.subject || "",
+        ...(d.notebook?.pages.map((p) => p.title || "") || []),
+      ]
+        .join(" ")
+        .toLocaleLowerCase()
+        .includes(search.toLocaleLowerCase()),
     )
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const tool = (
@@ -480,6 +581,27 @@ export default function App() {
           e.target.value = "";
         }}
       />
+      {migration && (
+        <SamsungImport
+          onClose={() => setMigration(false)}
+          onImport={async (imported) => {
+            if (!storageReady || boot.error)
+              throw new Error(
+                boot.error || "Dokumentspeicher wird noch geöffnet.",
+              );
+            const next = [...imported, ...docs];
+            await saveDocuments(next);
+            setDocs(next);
+            setMigration(false);
+            setActive(null);
+            setSection("notes");
+            setSidebar(false);
+            setNotice(
+              `${imported.length} Notizen als neue lokale Kopien übernommen.`,
+            );
+          }}
+        />
+      )}
       {sidebar && (
         <div
           className="sidebar-scrim"
@@ -503,14 +625,19 @@ export default function App() {
             setActive(null);
           }}
         >
-          <span className="brand-icon">
-            <FileText size={22} />
-          </span>
+          <img className="app-logo" src="./icons/icon-192.png" alt="" />
           phone<span className="brand-light">office</span>
-          <span className="beta">BETA</span>
         </a>
         <button className="primary new-button" onClick={() => newDoc()}>
           <Plus size={19} /> Neues Dokument
+        </button>
+        <button
+          className="new-notebook-button"
+          aria-label="Schulnotiz im Menü erstellen"
+          onClick={newNote}
+        >
+          <PenLine size={20} />
+          Neue Schulnotiz
         </button>
         <div className="nav-label">DEIN ARBEITSPLATZ</div>
         <nav>
@@ -523,6 +650,17 @@ export default function App() {
             }}
           >
             <Clock3 size={19} /> Zuletzt geöffnet <span>{docs.length}</span>
+          </button>
+          <button
+            className={section === "notes" ? "nav-item active" : "nav-item"}
+            onClick={() => {
+              setSection("notes");
+              setActive(null);
+              setSidebar(false);
+            }}
+          >
+            <PenLine size={19} />
+            Schulnotizen<span>{docs.filter((d) => d.notebook).length}</span>
           </button>
           <button
             className={section === "all" ? "nav-item active" : "nav-item"}
@@ -553,6 +691,21 @@ export default function App() {
               Ganz ohne Cloud-Upload.
             </p>
           </div>
+          <button className="nav-item" onClick={() => setMigration(true)}>
+            <Upload size={20} />
+            Samsung Notes importieren
+          </button>
+          <p className="sidebar-version">
+            Phone Office {version}
+            <br />
+            <span>
+              {native
+                ? Capacitor.getPlatform() === "ios"
+                  ? "iPhone / iPad"
+                  : "Android"
+                : "Browser-App"}
+            </span>
+          </p>
           <button className="nav-item" onClick={() => setModal("formats")}>
             <Settings2 size={18} /> Formate & App-Info
           </button>
@@ -562,7 +715,7 @@ export default function App() {
           </button>
         </div>
       </aside>
-      <main>
+      <main inert={!storageReady && !boot.error}>
         <header className="topbar">
           <div className="breadcrumb">
             <button
@@ -614,10 +767,22 @@ export default function App() {
                 <p>Lokal öffnen, bearbeiten und als neue Datei speichern.</p>
               </div>
             </div>
+            {!native && (
+              <aside className="install-tip">
+                <img className="app-logo" src="./icons/icon-192.png" alt="" />
+                <p>
+                  <strong>Auch auf deinem iPad</strong>
+                  <br />
+                  In Safari: Teilen → Zum Home-Bildschirm. Nach dem ersten
+                  vollständigen Laden offline nutzbar. Notizbücher regelmäßig
+                  als .pnote sichern; Browserdaten können gelöscht werden.
+                </p>
+              </aside>
+            )}
             <section className="quick-actions">
               <button className="quick-card create" onClick={newNote}>
                 <span className="quick-icon">
-                  <FileText size={25} />
+                  <PenLine size={25} />
                 </span>
                 <div>
                   <strong>Neue Schulnotiz</strong>
@@ -659,7 +824,9 @@ export default function App() {
                   <h2>
                     {section === "recent"
                       ? "Deine Dokumente"
-                      : "Alle Dokumente"}{" "}
+                      : section === "notes"
+                        ? "Schulnotizen"
+                        : "Alle Dokumente"}{" "}
                     <span>{docs.length}</span>
                   </h2>
                   <p>Nur deine erstellten und importierten Dateien.</p>
@@ -699,7 +866,21 @@ export default function App() {
                     <article className="document-card" key={d.id}>
                       <button className="document-open" onClick={() => open(d)}>
                         <div className="document-preview">
-                          <div className="mini-paper">
+                          {d.notebook && (
+                            <div
+                              className="notebook-cover"
+                              aria-hidden="true"
+                              dangerouslySetInnerHTML={{
+                                __html: pageSvg(d.notebook.pages[0]),
+                              }}
+                            />
+                          )}
+                          <div
+                            className={
+                              "mini-paper " +
+                              (d.notebook ? "notebook-cover-title" : "")
+                            }
+                          >
                             <h3>{d.title}</h3>
                             <div>
                               {new DOMParser()
@@ -711,6 +892,11 @@ export default function App() {
                         </div>
                         <div className="document-details">
                           <strong>{d.title}</strong>
+                          {d.notebook?.subject && (
+                            <span className="subject-label">
+                              {d.notebook.subject}
+                            </span>
+                          )}
                           <small>
                             <Clock3 size={12} />
                             {new Date(d.updatedAt).toLocaleDateString("de-DE", {
@@ -861,6 +1047,7 @@ export default function App() {
                 onTheme={() => setDark(!dark)}
                 onPreview={() => setModal("preview")}
                 onMoreExports={() => setModal("export")}
+                onExportPdf={() => void notePdfExport()}
                 onNotice={setNotice}
                 onExportPage={(p) => void noteExport(p)}
                 onChange={(notebook) =>

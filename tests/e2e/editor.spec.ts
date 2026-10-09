@@ -1,3 +1,4 @@
+import { awaitSaved } from "./persistence";
 import { test, expect, type Page } from "@playwright/test";
 async function selectTools(page: Page, label: string) {
   const tab = page.getByRole("tab", { name: label, exact: true });
@@ -43,6 +44,7 @@ test("Dokument bearbeiten, speichern und erneut öffnen", async ({
   await page.getByRole("button", { name: "Alle Treffer ersetzen" }).click();
   await expect(editor).toContainText("Mein neuer Plan");
   await page.getByRole("button", { name: "Meldung schließen" }).click();
+  await awaitSaved(page);
   await page.reload();
   await page.getByRole("button", { name: /Projektübersicht.*Wörter/ }).click();
   await expect(editor).toContainText("Mein neuer Plan");
@@ -102,6 +104,7 @@ test("HTML Download nach Bearbeitung erneut importieren", async ({ page }) => {
     "Neue lokale Kopie geöffnet",
   );
   await expect(editor).toContainText("Rundlauf funktioniert");
+  await awaitSaved(page);
   await page.reload();
   await expect(page.locator(".documents-section h2")).toContainText("2");
 });
@@ -145,6 +148,12 @@ test("Speicherfehler bleiben sichtbar und Datei-Export ist weiterhin möglich", 
   page,
 }) => {
   await page.addInitScript(() => {
+    const transaction = IDBDatabase.prototype.transaction;
+    IDBDatabase.prototype.transaction = function (store, mode, options) {
+      if (mode === "readwrite")
+        throw new DOMException("Speicher voll", "QuotaExceededError");
+      return transaction.call(this, store, mode, options);
+    };
     Storage.prototype.setItem = () => {
       throw new DOMException("Speicher voll", "QuotaExceededError");
     };
@@ -228,6 +237,7 @@ for (const format of ["odt", "ott", "fodt"] as const) {
     await editor.press("ControlOrMeta+End");
     await editor.press("Enter");
     await page.keyboard.type("Weitere Bearbeitung");
+    await awaitSaved(page);
     await page.reload();
     await page
       .getByRole("button", { name: /Weiterbearbeitet.*Wörter/ })

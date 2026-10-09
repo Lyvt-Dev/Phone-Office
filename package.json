@@ -1,11 +1,11 @@
 {
   "name": "phone-office",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && node scripts/prepare-pdf-assets.mjs && vite build && node scripts/build-offline.mjs",
     "test": "vitest run",
     "preview": "vite preview --host 0.0.0.0",
     "desktop": "npm run build && electron electron/main.cjs",
@@ -24,9 +24,11 @@
     "@tiptap/react": "^3.0.0",
     "@tiptap/starter-kit": "^3.0.0",
     "dompurify": "^3.2.0",
+    "jspdf": "^4.2.1",
     "jszip": "^3.10.2",
     "lucide-react": "^0.468.0",
     "mammoth": "^1.9.0",
+    "pdfjs-dist": "^6.4.299",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -38,6 +40,7 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
     "electron": "^44.7.0",
+    "fake-indexeddb": "^6.2.5",
     "jsdom": "^26.0.0",
     "prettier": "^3.9.9",
     "typescript": "^5.7.0",

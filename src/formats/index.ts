@@ -26,9 +26,9 @@ export const formatSupport = [
   },
   {
     name: "PDF",
-    status: "Druck / PDF-Ausgabe",
+    status: "Notiz-Hintergrund & PDF-Ausgabe",
     detail:
-      "Über den Browser-Druckdialog, sofern das Gerät PDF-Ausgabe anbietet. PDF-Import, Kommentare und Inhaltsbearbeitung sind noch nicht implementiert.",
+      "In der App lokal als Bildseiten einer neuen Schulnotiz öffnen (maximal 20 MB / 30 Seiten) und mit Handschrift ergänzen. PDF-Handschriftseiten als flache Bilder ausgeben; getippter Text separat. Keine direkte Text-/Formularbearbeitung, keine durchsuchbare Handschrift. Office-Druck/PDF weiterhin über Browser-Druckdialog.",
   },
   {
     name: "ODT · OTT · FODT",

@@ -112,7 +112,9 @@ describe("Notizbuch und Handschrift", () => {
       notebook: newNotebook(),
     };
     expect(importNote(JSON.stringify(json)).html).toBe("<p>Text</p>");
-    expect(() => importNote(JSON.stringify({ ...json, version: 2 }))).toThrow();
+    expect(() =>
+      importNote(JSON.stringify({ ...json, version: 999 })),
+    ).toThrow();
     expect(() => importNote("{")).toThrow();
   });
 });

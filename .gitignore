@@ -8,3 +8,5 @@ artifacts/
 *.keystore
 *.jks
 .kotlin/
+
+public/pdfjs/

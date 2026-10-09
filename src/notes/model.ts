@@ -16,6 +16,9 @@ export interface InkStroke {
 export interface NotePage {
   id: string;
   paper: Paper;
+  title?: string;
+  bookmarked?: boolean;
+  background?: string;
   strokes: InkStroke[];
 }
 export interface NotePreferences {
@@ -49,6 +52,7 @@ export const newNotebook = (): Notebook => ({
 export function isNotebook(value: unknown): value is Notebook {
   const n = value as Notebook;
   let total = 0;
+  let imageSize = 0;
   return (
     !!n &&
     n.version === 1 &&
@@ -57,7 +61,9 @@ export function isNotebook(value: unknown): value is Notebook {
         /^#[0-9a-f]{6}$/i.test(n.preferences.color) &&
         [2, 3, 6].includes(n.preferences.width) &&
         typeof n.preferences.finger === "boolean" &&
-        [80, 100, 125, 150].includes(n.preferences.zoom))) &&
+        Number.isFinite(n.preferences.zoom) &&
+        n.preferences.zoom >= 50 &&
+        n.preferences.zoom <= 300)) &&
     typeof n.subject === "string" &&
     n.subject.length <= 200 &&
     Array.isArray(n.pages) &&
@@ -68,6 +74,16 @@ export function isNotebook(value: unknown): value is Notebook {
       (p) =>
         !!p &&
         typeof p.id === "string" &&
+        (p.background === undefined ||
+          (typeof p.background === "string" &&
+            p.background.length <= 2000000 &&
+            (imageSize += p.background.length) <= 12000000 &&
+            /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/.test(
+              p.background,
+            ))) &&
+        (p.title === undefined ||
+          (typeof p.title === "string" && p.title.length <= 200)) &&
+        (p.bookmarked === undefined || typeof p.bookmarked === "boolean") &&
         ["plain", "ruled", "grid"].includes(p.paper) &&
         Array.isArray(p.strokes) &&
         p.strokes.length <= 2000 &&
@@ -169,5 +185,5 @@ export function pageSvg(page: NotePage): string {
               (_, i) => `<path d="M ${(i + 1) * 32} 0 V ${PAGE_HEIGHT}"/>`,
             ).join("")
           : "");
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}" viewBox="0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}"><rect width="100%" height="100%" fill="white"/><g fill="none" stroke="#d8e4ec" stroke-width="1">${lines}</g>${page.strokes.map((s) => `<path d="${strokePath(s)}" fill="${s.color}" opacity="${s.tool === "marker" ? 0.3 : 1}"/>`).join("")}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}" viewBox="0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}"><rect width="100%" height="100%" fill="white"/><g fill="none" stroke="#d8e4ec" stroke-width="1">${lines}</g>${page.background ? `<image href="${page.background}" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}"/>` : ""}${page.strokes.map((s) => `<path d="${strokePath(s)}" fill="${s.color}" opacity="${s.tool === "marker" ? 0.3 : 1}"/>`).join("")}</svg>`;
 }

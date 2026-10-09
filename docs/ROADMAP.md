@@ -10,3 +10,9 @@
 Jede Stufe erhält eigene Tests und Abnahmekriterien. Nicht implementierte Punkte bleiben in der Oberfläche als Grenzen dokumentiert; Projektgerüste gelten nicht als getestete native App.
 
 Schulnotizen 0.3: separater Handschriftkern mit Seiten/Papier, Stift/Textmarker/Radierer, Druckdaten, `.pnote`-Sicherung und SVG-Seiten implementiert. Tablet-Browserprüfungen vorhanden. Als nächste Geräteabnahme folgen physischer S Pen, Apple Pencil auf kompatiblem iPad sowie iOS-Auslieferung. Handschrifterkennung, PDF-Annotationen und native Stift-SDKs sind weiter offen.
+
+## GoodNotes-orientierte Erweiterungen ab 0.5
+
+Implementiert: Zwei-Finger-Zoom, Seitenübersicht/Metadaten/Lesezeichen, Seitenorganisation, rechteckige Handschrift-Auswahl und gerade Linien, lokale PDF-Bildhintergründe und PDF-Ausgabe, Samsung-Notes-PDF-Übertragung, größere atomare lokale Speicherung, eigene Icons und Offline-Web-App.
+
+Weitere Stufen mit jeweils eigenen Tests: freies Lasso und Objekte/Sticker/Bilder im Handschriftkern; skalierbare Ordner und Tags; inkrementelle Speicherung statt Gesamtsnapshots und Leistungsprofile auf günstigen Geräten; PDF-Vektorhintergründe/Annotationen ohne Rasterung; lokal ausgeführte Handschrift- und Formelerkennung sowie OCR-Suche; Audio nach ausdrücklicher Mikrofonfreigabe und lokale Synchronisierung mit Notizpositionen; optionale Cloud-Sync/Kollaboration nach Zustimmung; TestFlight-/Store-Signierung und physische Apple-Pencil-/Samsung-Abnahme. Keine dieser offenen Stufen wird als vorhandene GoodNotes-Parität bezeichnet.

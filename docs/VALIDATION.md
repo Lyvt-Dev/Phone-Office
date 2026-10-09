@@ -1,4 +1,14 @@
-# Validierungsstand 0.4
+# Validierungsstand 0.5
+
+58 Unit-Tests bestanden: Notizkern, Auswahl/Seitenoperationen, Grenzen und Kompatibilität, Import-/Exportrundläufe, Samsung-Übertragung, atomare Datenbank-Snapshots und Recovery bei vollem Legacy-Speicher. 96 Produktions-Browserszenarien bestanden auf Chromium/Desktop, Smartphone und Tablets in Hoch-/Querformat. Enthalten sind echte Chromium-Pointer-Eingabe für Stift und Zwei-Finger-Zoom, Seitenverwaltung, Auswahl/Verschieben/Kopieren/Löschen, gerade Linien, Fach-/Seitentitelsuche, PDF-Import → Beschriftung → PDF-Export → erneutes Öffnen mit Pixelprüfung sowie Samsung-PDF-Massenimport und erhaltene bestehende Dokumente. Vor Recovery-Prüfungen wird der abgeschlossene Speichervorgang abgewartet; noch laufende Transaktionen gelten nicht als gespeichert.
+
+Für die neue `.pnote`-Dateiversion 2 wurde der Sicherungs-/Import-Rundlauf nach dem letzten Build gezielt erneut ausgeführt: vier Szenarien bestanden. Version 1 bleibt lesbar. Der Release-Workflow wiederholt alle Unit-/Browserszenarien, die unabhängige ODF-1.3-Schemaprüfung und verifiziert die native Android-APK. Separate Workflows kompilieren iPhone/iPad im Simulator und prüfen zwei iPad-Szenarien mit WebKit vor Web-Bereitstellung. Der lokale WebKit-Download war durch die Netzwerkregel (HTTP 403) blockiert; diese Engineprüfung wird auf dem GitHub-Runner ausgeführt und ist kein lokaler oder physischer iPad-Nachweis.
+
+Offen: physischer Apple Pencil, neue Zoom-/Auswahlgesten auf Samsung/iPad, native Datei-/Share-Dialoge, VoiceOver/TalkBack und Großdokument-Benchmarks. Frühere Nutzer-Rückmeldung: S Pen funktioniert, ohne genaue Geräte-/Versionsangabe. Native iPad-Signierung/TestFlight ist nicht eingerichtet; Simulator-ZIPs sind keine Geräte-IPA. Keine vollständige GoodNotes-Parität. Details: `NOTES.md`, `IPAD.md`, `RELEASE-0.5.0.md`.
+
+## Frühere Validierung
+
+### Validierungsstand 0.4
 
 46 Unit-Tests bestanden; Notizpräferenzen bleiben gespeichert, ungültige Einstellungswerte werden beim Öffnen abgelehnt. 60 Browser-Szenarien für Desktop, Tablet hoch/quer und Smartphone, einschließlich kompakter Handy-Querformatansicht (844 × 390), 48-Pixel-Werkzeuge, sichtbarer Schreibfläche, Einstellungsdialog/Focus/Escape, Präferenzen nach Neustart sowie Sicherung/Import. Der Release-Workflow prüft den endgültigen Stand erneut.
 
