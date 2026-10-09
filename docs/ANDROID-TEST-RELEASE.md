@@ -38,3 +38,5 @@ bash gradlew --no-daemon --max-workers=2 assembleDebug
 APK: `android/app/build/outputs/apk/debug/app-debug.apk`.
 
 GitHub Actions erstellt bei Tags `v*-android-test*` automatisch die APK, verifiziert Signatur und Debug-Paketkennung und veröffentlicht ein Vorab-Release. Manuelles Starten des Workflows erzeugt nur ein herunterladbares Actions-Artefakt. Veröffentlichung erfordert aktivierte Actions und Schreibrechte für das Repository-Token; Organisationsrichtlinien können dies sperren.
+
+Ab 0.3.1 wird die gecachte Datei explizit als Gradle-Signierschlüssel ausgewählt. Die Pipeline vergleicht den APK-Zertifikatsfingerabdruck mit dieser Datei und veröffentlicht `signing-identity.txt` mit Cache-Status. 0.3.0 hat gegenüber 0.2.0 eine andere Signatur; vor einer notwendigen Neuinstallation immer Dokumente exportieren. Caches ersetzen weiterhin keine dauerhafte, gesicherte Signierverwaltung.

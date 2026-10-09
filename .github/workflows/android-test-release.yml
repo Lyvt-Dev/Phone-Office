@@ -26,6 +26,7 @@ jobs:
           distribution: temurin
           java-version: "21"
       - name: Restore test signing identity
+        id: signing-cache
         uses: actions/cache@v4
         with:
           path: ~/.android/debug.keystore
@@ -63,6 +64,16 @@ jobs:
           "$sdk_dir/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$sdk_dir" "platform-tools" "platforms;android-36" "build-tools;36.0.0" "build-tools;35.0.0"
           printf 'ANDROID_HOME=%s\nANDROID_SDK_ROOT=%s\n' "$sdk_dir" "$sdk_dir" >> "$GITHUB_ENV"
           printf '%s\n' "$sdk_dir/cmdline-tools/latest/bin" "$sdk_dir/platform-tools" >> "$GITHUB_PATH"
+      - name: Select explicit cached test signing key
+        run: |
+          key_store="$HOME/.android/debug.keystore"
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$key_store" ]; then
+            keytool -genkeypair -keystore "$key_store" -storetype JKS -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" -noprompt
+          fi
+          printf 'PHONE_OFFICE_DEBUG_KEYSTORE=%s\n' "$key_store" >> "$GITHUB_ENV"
+          keytool -exportcert -keystore "$key_store" -storepass android -alias androiddebugkey -file "$RUNNER_TEMP/android-test-certificate.der"
+          sha256sum "$RUNNER_TEMP/android-test-certificate.der"
       - name: Assemble signed debug APK
         env:
           PHONE_OFFICE_VERSION_CODE: ${{ github.run_number }}
@@ -73,6 +84,12 @@ jobs:
           mkdir -p artifacts
           cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/phone-office-android-test.apk
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs artifacts/phone-office-android-test.apk > artifacts/signature.txt
+          expected=$(sha256sum "$RUNNER_TEMP/android-test-certificate.der" | cut -d ' ' -f 1)
+          actual=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' artifacts/signature.txt)
+          test "$actual" = "$expected"
+          printf 'Certificate SHA256: %s\n' "$actual" > artifacts/signing-identity.txt
+          printf 'Signing cache restored: %s\n' '${{ steps.signing-cache.outputs.cache-hit }}' >> artifacts/signing-identity.txt
+          echo "::notice title=Android test signing identity::$actual; cache restored: ${{ steps.signing-cache.outputs.cache-hit }}"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging artifacts/phone-office-android-test.apk > artifacts/package-info.txt
           grep "package: name='dev.lyvt.phoneoffice.debug'" artifacts/package-info.txt
           grep 'application-debuggable' artifacts/package-info.txt
@@ -110,4 +127,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android-test.apk artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt --repo "$GITHUB_REPOSITORY" --verify-tag --prerelease --title "Phone Office Android-Test $GITHUB_REF_NAME" --notes-file docs/ANDROID-TEST-RELEASE.md
+          gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android-test.apk artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt --repo "$GITHUB_REPOSITORY" --verify-tag --prerelease --title "Phone Office Android-Test $GITHUB_REF_NAME" --notes-file docs/ANDROID-TEST-RELEASE.md
