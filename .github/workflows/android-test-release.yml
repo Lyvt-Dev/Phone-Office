@@ -53,6 +53,11 @@ jobs:
             echo 'Refusing an APK that requires adb install -t'
             exit 1
           fi
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump xmltree artifacts/phone-office-android-test.apk AndroidManifest.xml > artifacts/manifest-info.txt
+          if grep -q 'android:testOnly' artifacts/manifest-info.txt; then
+            echo 'Refusing testOnly manifest flag for file-based installation'
+            exit 1
+          fi
           cd artifacts
           sha256sum phone-office-android-test.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
