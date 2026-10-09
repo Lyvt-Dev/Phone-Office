@@ -4,19 +4,19 @@ Diese APK ist ein **mit einem Android-Debug-Schlüssel signierter Testbuild**, k
 
 - Paket: `dev.lyvt.phoneoffice.debug`, App-Name: **Phone Office Test**.
 - Mindestversion: Android 7.0 (API 24). Android System WebView sollte aktuell sein.
-- Lokaler Editor mit TXT-/HTML-Import, begrenztem DOCX-Import, Vorlagen und Wiederherstellung. Formatgrenzen stehen in der App und in `docs/CONCEPT.md`.
-- Native Datei-Downloads, Druck/PDF und System-Integration sind noch nicht auf Samsung-Geräten geprüft. Dieser Build dient dem ersten Gerätetest, nicht der zuverlässigen Dokumentarchivierung. Zum Testen Kopien verwenden.
+- Lokaler Editor mit ODT-/OTT-/FODT-Import und -Export, SXW-/STW-Import, TXT-/HTML-Import, begrenztem DOCX-Import und Wiederherstellung. Keine Beispielvorlagen oder erfundenen Dokumente. Formatgrenzen stehen in der App und in `docs/CONCEPT.md`.
+- Native Dateiausgabe verwendet jetzt einen lokalen Cache und die Auswahl zum Speichern/Teilen. Dieser Dialog, Druck/PDF und weitere System-Integration sind noch nicht auf Samsung-Geräten geprüft. Dieser Build dient dem ersten Gerätetest, nicht der zuverlässigen Dokumentarchivierung. Zum Testen Kopien verwenden.
 
 ## Installation auf Samsung
 
 1. Unter „Assets“ die Datei **phone-office-android-test.apk** herunterladen.
 2. Die APK in „Eigene Dateien“ öffnen.
 3. Falls Android danach fragt, die Installation für die verwendete Quelle erlauben. Samsung kann sie zusätzlich mit dem „Automatischen Blocker“ verhindern; das liegt nicht an einer fehlenden Lizenz. Nur eine bewusst gewählte, vertrauenswürdige Quelle freigeben und die Einstellung anschließend wieder einschränken. Ein Firmengerät kann Installation generell untersagen.
-4. **Phone Office Test** starten, eine Vorlage öffnen, bearbeiten, zurückgehen und die App neu starten. Prüfen, ob Änderungen erhalten bleiben; außerdem Tastatur, Auswahl, Drehung und Dateiimport testen.
+4. **Phone Office Test** starten, ein leeres Dokument erstellen, bearbeiten, zurückgehen und die App neu starten. Prüfen, ob Änderungen erhalten bleiben; außerdem Tastatur, Auswahl, Drehung und Dateiimport testen.
 
 Die veröffentlichte Datei enthält ausschließlich einen Testbuild. SHA256SUMS.txt und signature.txt dokumentieren Dateiprüfsumme und Signatur. Die Signatur belegt Integrität und Installierbarkeit, keinen durchgeführten Samsung-Gerätetest.
 
-Der Workflow cached den Debug-Schlüssel für Folgebuilds. Wird dieser Cache entfernt oder läuft er ab, kann sich die Signatur ändern. Android akzeptiert dann kein Update über eine ältere Testinstallation. Vor Deinstallation Daten exportieren; Deinstallation löscht lokale App-Daten. Für dauerhafte Update-Kompatibilität ist später ein gesicherter, beständiger Signierschlüssel nötig.
+Der Workflow cached den Debug-Schlüssel auf main für weitere Test-Tags. Android-Version 0.2 führt diesen dauerhafteren Cache neu ein; gegenüber der ersten Test-APK kann sich die Signatur ändern. Android verweigert dann eine direkte Aktualisierung. Eigene Dokumente zuerst in der bisherigen App exportieren oder deren Text anderweitig sichern; niemals wegen eines Updatefehlers ungesicherte App-Daten löschen. Wird dieser Cache entfernt oder läuft er ab, kann sich die Signatur ändern. Android akzeptiert dann kein Update über eine ältere Testinstallation. Vor Deinstallation Daten exportieren; Deinstallation löscht lokale App-Daten. Für dauerhafte Update-Kompatibilität ist später ein gesicherter, beständiger Signierschlüssel nötig.
 
 ## Reproduzieren
 

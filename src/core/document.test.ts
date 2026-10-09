@@ -15,6 +15,13 @@ function file(name: string, data: string | Uint8Array) {
 }
 beforeEach(() => localStorage.clear());
 describe("Dokumente und lokale Wiederherstellung", () => {
+  it("zählt echte Wörter über Absatz- und Zellgrenzen hinweg", () => {
+    expect(
+      wordCount(
+        "<p>Hallo</p><p>Welt</p><table><tr><td>Eins</td><td>Zwei</td></tr></table><p>!</p>",
+      ),
+    ).toBe(4);
+  });
   it("speichert eine Bearbeitung und öffnet sie mit Identität erneut", () => {
     const doc = createDocument("Test", "<p>Erster Satz</p>");
     localStorageAdapter.save([doc]);
@@ -88,7 +95,7 @@ describe("Format-Rundläufe und Grenzen", () => {
       ).format,
     ).toBe("HTML");
   });
-  it.each(["doc", "odt", "ott", "rtf", "pdf"])(
+  it.each(["doc", "rtf", "pdf", "ods", "odp"])(
     "lehnt %s ohne stillen Formatverlust ab",
     async (ext) => {
       await expect(importFile(file(`test.${ext}`, "text"))).rejects.toThrow(

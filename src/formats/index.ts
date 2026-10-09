@@ -25,10 +25,22 @@ export const formatSupport = [
       "Über den Browser-Druckdialog, sofern das Gerät PDF-Ausgabe anbietet. PDF-Import, Kommentare und Inhaltsbearbeitung sind noch nicht implementiert.",
   },
   {
-    name: "DOC · ODT · OTT · RTF",
-    status: "Geplant",
+    name: "ODT · OTT · FODT",
+    status: "Import & Export (eingeschränkt)",
     detail:
-      "Noch nicht implementiert. Sicherer Weg: in Word oder LibreOffice eine Kopie als DOCX, HTML oder TXT exportieren.",
+      "Writer-Text, Überschriften, Grundformatierung, Listen, Tabellen, Links und eingebettete PNG/JPEG/GIF/WebP-Bilder. Seitenlayout, Bildgrößen, Kopf-/Fußzeilen, Kommentare und Änderungsverfolgung werden nicht originalgetreu erhalten.",
+  },
+  {
+    name: "SXW · STW",
+    status: "Import (Legacy)",
+    detail:
+      "Alte Writer-Dokumente und Vorlagen werden als Textkopie importiert. Export in modernes ODT/OTT/FODT; keine Garantie für Legacy-Layout.",
+  },
+  {
+    name: "DOC · RTF · ODS · ODP",
+    status: "Nicht unterstützt",
+    detail:
+      "DOC/RTF benötigen eigene Adapter. Calc-/Impress-Dateien benötigen Tabellen- und Präsentationseditoren. Für Text bitte eine Kopie als ODT, DOCX, HTML oder TXT verwenden.",
   },
 ];
 export function sanitize(html: string) {
@@ -91,7 +103,13 @@ export async function importFile(
   const ext = file.name.split(".").pop()?.toLowerCase();
   const bytes = new Uint8Array(await file.arrayBuffer());
   const zip = bytes[0] === 0x50 && bytes[1] === 0x4b;
-  if (ext === "docx" && zip) {
+  if (zip) {
+    const { readOfficeArchive, importWriter } = await import("./odf");
+    const archive = await readOfficeArchive(bytes);
+    if (archive.kind !== "docx") {
+      const result = await importWriter(bytes, archive);
+      return { ...result, html: sanitize(result.html) };
+    }
     const { default: mammoth } = await import("mammoth/mammoth.browser");
     const result = await mammoth.convertToHtml({
       arrayBuffer: new window.Uint8Array(bytes).buffer,
@@ -107,11 +125,22 @@ export async function importFile(
   }
   if (ext === "docx")
     throw new Error("Die Datei ist kein gültiges DOCX-Archiv.");
-  if (["doc", "odt", "ott", "rtf", "pdf"].includes(ext || ""))
+  if (["odt", "ott", "sxw", "stw"].includes(ext || ""))
+    throw new Error("Die Datei ist kein gültiges Writer-ZIP-Archiv.");
+  if (["doc", "rtf", "pdf", "ods", "odp", "ots", "otp"].includes(ext || ""))
     throw new Error(
-      "Dieses Format wird noch nicht importiert. Bitte eine Kopie als DOCX, HTML oder TXT verwenden.",
+      "Dieses Format wird noch nicht importiert. Bitte eine Textkopie als ODT, DOCX, HTML oder TXT verwenden.",
     );
   const text = new TextDecoder().decode(bytes);
+  if (
+    ext === "fodt" ||
+    (/<office:document[\s>]/.test(text) &&
+      text.includes("urn:oasis:names:tc:opendocument:xmlns:office:1.0"))
+  ) {
+    const { importWriter } = await import("./odf");
+    const result = await importWriter(bytes);
+    return { ...result, html: sanitize(result.html) };
+  }
   if (zip || bytes.includes(0))
     throw new Error("Binärdatei erkannt. Bitte TXT, HTML oder DOCX wählen.");
   if (
@@ -128,7 +157,7 @@ export async function importFile(
   if (ext === "txt")
     return { html: textToHtml(text), format: "TXT", warnings: [] };
   throw new Error(
-    "Unbekannter Dateityp. Unterstützt werden TXT, HTML, HTM und DOCX.",
+    "Unbekannter Dateityp. Unterstützt werden ODT, OTT, FODT, SXW, STW, TXT, HTML, HTM und DOCX.",
   );
 }
 export function exportContent(html: string, format: "html" | "txt") {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
@@ -53,6 +54,8 @@ import {
 } from "./core/document";
 import { exportContent, formatSupport, importFile } from "./formats";
 import { localStorageAdapter } from "./storage/local";
+import { saveExport } from "./storage/export";
+import type { WriterFormat } from "./formats/odf";
 const ParagraphLayout = Extension.create({
   name: "paragraphLayout",
   addGlobalAttributes() {
@@ -81,26 +84,6 @@ const ParagraphLayout = Extension.create({
     ];
   },
 });
-const starters = [
-  {
-    title: "Projektübersicht",
-    tag: "PROJEKT",
-    color: "lavender",
-    html: "<h1>Projektübersicht</h1><p>Ein guter Plan beginnt mit einer klaren Idee.</p><h2>Unser Ziel</h2><p>Was möchten wir gemeinsam erreichen?</p><h2>Nächste Schritte</h2><ul><li>Ideen sammeln</li><li>Prioritäten festlegen</li><li>Gemeinsam loslegen</li></ul>",
-  },
-  {
-    title: "Besprechungsnotizen",
-    tag: "NOTIZEN",
-    color: "peach",
-    html: "<h1>Besprechungsnotizen</h1><p>Raum für Gedanken, Entscheidungen und nächste Schritte.</p><h2>Agenda</h2><ul><li>Aktueller Stand</li><li>Offene Fragen</li><li>Nächste Schritte</li></ul>",
-  },
-  {
-    title: "Ein neuer Anfang",
-    tag: "ENTWURF",
-    color: "mint",
-    html: "<h1>Ein neuer Anfang</h1><p>Jede große Geschichte beginnt mit einem ersten Satz.</p><p>Hier ist Platz für deine Ideen.</p>",
-  },
-];
 const initial = () => {
   try {
     return { docs: localStorageAdapter.load(), error: "" };
@@ -109,11 +92,12 @@ const initial = () => {
   }
 };
 export default function App() {
+  const native = Capacitor.isNativePlatform();
   const [boot] = useState(initial);
   const [docs, setDocs] = useState<OfficeDocument[]>(boot.docs);
   const [active, setActive] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [view, setView] = useState<"grid" | "list">("grid");
+  const [view, setView] = useState<"grid" | "list">("list");
   const [section, setSection] = useState("recent");
   const [dark, setDark] = useState(() => {
     try {
@@ -125,6 +109,8 @@ export default function App() {
   const [modal, setModal] = useState<
     "formats" | "export" | "find" | "layout" | "preview" | null
   >(null);
+  const [toolGroup, setToolGroup] = useState("text");
+  const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(boot.error);
   const [saveStatus, setSaveStatus] = useState("Lokal gespeichert");
   const [sidebar, setSidebar] = useState(false);
@@ -285,23 +271,42 @@ export default function App() {
     }
     if (fileInput.current) fileInput.current.value = "";
   }
-  function download(format: "html" | "txt") {
-    if (!doc || !editor) return;
-    const text = exportContent(editor.getHTML(), format);
-    const url = URL.createObjectURL(
-      new Blob([text], {
-        type:
-          format === "html"
-            ? "text/html;charset=utf-8"
-            : "text/plain;charset=utf-8",
-      }),
-    );
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = doc.title.replace(/[/\\:*?"<>|]/g, "_") + "." + format;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setModal(null);
+  async function download(format: "html" | "txt" | WriterFormat) {
+    if (!doc || !editor || busy) return;
+    setBusy(true);
+    try {
+      let blob: Blob;
+      if (format === "html" || format === "txt")
+        blob = new Blob([exportContent(editor.getHTML(), format)], {
+          type:
+            format === "html"
+              ? "text/html;charset=utf-8"
+              : "text/plain;charset=utf-8",
+        });
+      else {
+        if (
+          !window.confirm(
+            "Writer-Export erhält Text, Grundformatierung, Listen, Tabellen und eingebettete Bilder. Seitenlayout, Bildgrößen, Kommentare, Noten und Änderungsverfolgung sind nicht originalgetreu. Als neue Datei exportieren?",
+          )
+        )
+          return;
+        const { exportWriter } = await import("./formats/odf");
+        blob = await exportWriter(editor.getHTML(), format, doc.title);
+      }
+      await saveExport(
+        blob,
+        (doc.title.trim() || "Dokument")
+          .replace(/[/\\:*?"<>|]/g, "_")
+          .slice(0, 120) +
+          "." +
+          format,
+      );
+      setModal(null);
+    } catch (e) {
+      setNotice("Export nicht abgeschlossen: " + (e as Error).message);
+    } finally {
+      setBusy(false);
+    }
   }
   function replaceAll() {
     if (!editor || !find) return;
@@ -350,6 +355,31 @@ export default function App() {
       aria-label={label}
       aria-pressed={on}
       className={"tool " + (on ? "selected" : "")}
+      data-toolgroup={
+        ["Rückgängig", "Wiederholen"].includes(label)
+          ? "history"
+          : ["Fett", "Kursiv", "Unterstrichen", "Durchgestrichen"].includes(
+                label,
+              )
+            ? "text"
+            : [
+                  "Linksbündig",
+                  "Zentriert",
+                  "Rechtsbündig",
+                  "Aufzählung",
+                  "Nummerierte Liste",
+                  "Listeneinzug vergrößern",
+                  "Listeneinzug verkleinern",
+                ].includes(label)
+              ? "paragraph"
+              : [
+                    "Tabelle einfügen",
+                    "Bild vom Gerät einfügen",
+                    "Link einfügen",
+                  ].includes(label)
+                ? "insert"
+                : "more"
+      }
       onMouseDown={(event) => event.preventDefault()}
       onClick={action}
     >
@@ -362,7 +392,7 @@ export default function App() {
         ref={fileInput}
         type="file"
         hidden
-        accept=".txt,.html,.htm,.docx,.doc,.odt,.ott,.rtf,.pdf"
+        accept=".odt,.ott,.fodt,.sxw,.stw,.txt,.html,.htm,.docx,.doc,.rtf,.pdf"
         onChange={(e) => void importDocument(e.target.files?.[0])}
       />
       <input
@@ -385,7 +415,21 @@ export default function App() {
           e.target.value = "";
         }}
       />
+      {sidebar && (
+        <div
+          className="sidebar-scrim"
+          aria-hidden="true"
+          onClick={() => setSidebar(false)}
+        />
+      )}
       <aside className={"sidebar " + (sidebar ? "mobile-open" : "")}>
+        <button
+          className="sidebar-close icon-button"
+          aria-label="Menü schließen"
+          onClick={() => setSidebar(false)}
+        >
+          <X size={24} />
+        </button>
         <a
           className="brand"
           href="#"
@@ -447,13 +491,9 @@ export default function App() {
           <button className="nav-item" onClick={() => setModal("formats")}>
             <Settings2 size={18} /> Formate & App-Info
           </button>
-          <button className="profile" onClick={() => setDark(!dark)}>
-            <span className="avatar">DU</span>
-            <span>
-              <strong>Dein Arbeitsplatz</strong>
-              <small>Lokal · Erste Version</small>
-            </span>
-            {dark ? <Sun size={18} /> : <Moon size={18} />}
+          <button className="nav-item" onClick={() => setDark(!dark)}>
+            {dark ? <Sun size={22} /> : <Moon size={22} />}{" "}
+            {dark ? "Hellmodus" : "Dunkelmodus"}
           </button>
         </div>
       </aside>
@@ -499,48 +539,28 @@ export default function App() {
             >
               {dark ? <Sun size={19} /> : <Moon size={19} />}
             </button>
-            <span className="small-avatar">DU</span>
           </div>
         </header>
         {!active ? (
           <div className="dashboard">
             <div className="intro">
               <div>
-                <div className="eyebrow">PLATZ FÜR DEINE GEDANKEN</div>
-                <h1>
-                  Große Ideen beginnen
-                  <br />
-                  mit einem <em>ersten Wort.</em>
-                </h1>
-                <p>Schreiben, gestalten, weitermachen. Wo immer du bist.</p>
-              </div>
-              <div className="intro-art" aria-hidden="true">
-                <div className="art-sheet">
-                  <div className="art-dot" />
-                  <div className="art-title" />
-                  <i />
-                  <i />
-                  <i className="short" />
-                  <div className="art-block" />
-                  <i />
-                  <i className="short" />
-                </div>
-                <span className="art-pen">✎</span>
-                <span className="spark s1">✦</span>
-                <span className="spark s2">✧</span>
-                <span className="art-label">
-                  Eine Idee. Viele Möglichkeiten.
-                </span>
+                <h1>Deine Dokumente</h1>
+                <p>Lokal öffnen, bearbeiten und als neue Datei speichern.</p>
               </div>
             </div>
             <section className="quick-actions">
-              <button className="quick-card create" onClick={() => newDoc()}>
+              <button
+                className="quick-card create"
+                aria-label="Neues Dokument"
+                onClick={() => newDoc()}
+              >
                 <span className="quick-icon">
                   <Plus size={25} />
                 </span>
                 <div>
-                  <strong>Einfach losschreiben</strong>
-                  <p>Ein leeres Blatt für deine nächste Idee</p>
+                  <strong>Neues Dokument</strong>
+                  <p>Ohne Vorlage oder Beispieltext</p>
                 </div>
                 <ArrowRight size={20} />
               </button>
@@ -567,7 +587,7 @@ export default function App() {
                       : "Alle Dokumente"}{" "}
                     <span>{docs.length}</span>
                   </h2>
-                  <p>Deine Gedanken, an einem Ort.</p>
+                  <p>Nur deine erstellten und importierten Dateien.</p>
                 </div>
                 <div className="document-controls">
                   <label className="search">
@@ -611,9 +631,6 @@ export default function App() {
                                 .parseFromString(d.html, "text/html")
                                 .body.textContent?.slice(0, 210)}
                             </div>
-                            <span />
-                            <span />
-                            <span />
                           </div>
                           <span className="format-tag">{d.format}</span>
                         </div>
@@ -648,9 +665,7 @@ export default function App() {
                     <FileText size={29} />
                   </span>
                   <h3>
-                    {search
-                      ? "Noch kein Treffer"
-                      : "Dein nächstes Kapitel wartet"}
+                    {search ? "Noch kein Treffer" : "Noch keine Dokumente"}
                   </h3>
                   <p>
                     {search
@@ -663,55 +678,9 @@ export default function App() {
                 </div>
               )}
             </section>
-            <section className="templates">
-              <div className="section-head">
-                <div>
-                  <h2>Ein guter Anfang</h2>
-                  <p>Mit einer Vorlage schneller zur ersten Zeile.</p>
-                </div>
-                <span className="subtle">3 lokale Vorlagen</span>
-              </div>
-              <div className="template-grid">
-                <button
-                  className="template-card blank"
-                  onClick={() => newDoc()}
-                >
-                  <span className="template-visual">
-                    <Plus size={28} />
-                  </span>
-                  <strong>Leeres Dokument</strong>
-                  <small>Alle Möglichkeiten offen</small>
-                </button>
-                {starters.map((t) => (
-                  <button
-                    className={"template-card " + t.color}
-                    key={t.title}
-                    onClick={() => newDoc(t.title, t.html)}
-                  >
-                    <div className="template-visual">
-                      <span className="template-mini">
-                        <b>{t.tag}</b>
-                        <i />
-                        <i />
-                        <i />
-                        <i />
-                      </span>
-                    </div>
-                    <strong>{t.title}</strong>
-                    <small>
-                      {t.tag === "PROJEKT"
-                        ? "Klar planen. Gemeinsam starten."
-                        : t.tag === "NOTIZEN"
-                          ? "Wichtiges festhalten."
-                          : "Gedanken freien Lauf lassen."}
-                    </small>
-                  </button>
-                ))}
-              </div>
-            </section>
             <footer>
               <span>
-                <ShieldCheck size={14} /> Lokal gespeichert. Nur für dich.
+                <ShieldCheck size={18} /> {saveStatus}
               </span>
               <button onClick={() => setModal("formats")}>
                 Formatunterstützung ansehen <ArrowRight size={14} />
@@ -742,8 +711,7 @@ export default function App() {
                 />
                 <div className="save-meta">
                   <Check size={13} />
-                  {saveStatus} · Browser auf diesem Gerät · Quelle:{" "}
-                  {doc?.format}
+                  {saveStatus} · Quelle: {doc?.format}
                 </div>
               </div>
               <div className="editor-actions">
@@ -766,9 +734,32 @@ export default function App() {
               </div>
             </div>
             <div
-              className="toolbar"
+              className="tool-tabs"
+              role="tablist"
+              aria-label="Werkzeugbereich"
+            >
+              {[
+                ["text", "Text"],
+                ["paragraph", "Absatz"],
+                ["insert", "Einfügen"],
+                ["more", "Mehr"],
+              ].map(([id, label]) => (
+                <button
+                  key={id}
+                  role="tab"
+                  aria-selected={toolGroup === id}
+                  aria-controls="editor-tools"
+                  onClick={() => setToolGroup(toolGroup === id ? "none" : id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div
+              className={"toolbar group-" + toolGroup}
               role="toolbar"
               aria-label="Textformatierung"
+              id="editor-tools"
             >
               {tool("Rückgängig", <Undo2 size={18} />, () => {
                 editor?.chain().focus().undo().run();
@@ -779,6 +770,7 @@ export default function App() {
               <span className="separator" />
               <select
                 aria-label="Formatvorlage"
+                data-toolgroup="text"
                 value={
                   editor?.isActive("heading", { level: 1 })
                     ? "h1"
@@ -805,6 +797,7 @@ export default function App() {
               </select>
               <select
                 aria-label="Schriftart"
+                data-toolgroup="text"
                 onChange={(e) =>
                   editor?.chain().focus().setFontFamily(e.target.value).run()
                 }
@@ -816,6 +809,7 @@ export default function App() {
               </select>
               <select
                 aria-label="Schriftgröße"
+                data-toolgroup="text"
                 defaultValue="16px"
                 onChange={(e) =>
                   editor?.chain().focus().setFontSize(e.target.value).run()
@@ -859,7 +853,11 @@ export default function App() {
                 editor?.chain().focus().toggleStrike().run();
                 refresh((n) => n + 1);
               })}
-              <label className="color-tool" title="Textfarbe">
+              <label
+                data-toolgroup="text"
+                className="color-tool"
+                title="Textfarbe"
+              >
                 A
                 <input
                   type="color"
@@ -996,8 +994,9 @@ export default function App() {
                 <div className="eyebrow">TRANSPARENT VON ANFANG AN</div>
                 <h2>Deine Dateien. Klare Grenzen.</h2>
                 <p>
-                  Phone Office ist eine erste, lokale Web-Version. Native
-                  Android- und iOS-Apps folgen als eigene Ausbaustufe.
+                  Phone Office verarbeitet Dokumente lokal. Der
+                  Android-Testbuild verwendet denselben Editor wie die
+                  Web-Version. Die Formatunterstützung hat folgende Grenzen.
                 </p>
                 <div className="format-list">
                   {formatSupport.map((f) => (
@@ -1022,13 +1021,38 @@ export default function App() {
                 <div className="eyebrow">ALS NEUE DATEI SPEICHERN</div>
                 <h2>Dein Dokument mitnehmen</h2>
                 <p>
-                  Der Download erstellt eine neue Datei. Phone Office schreibt
-                  nicht in deine Originaldatei. Eine mögliche Ersetzung wird vom
-                  Geräte-Dateidialog gesteuert.
+                  Jeder Export erzeugt eine neue Kopie. Auf Android öffnet sich
+                  die Auswahl zum Speichern oder Teilen. Wähle den Speicherort
+                  selbst; deine Originaldatei wird nicht verändert.
                 </p>
+                {(["odt", "ott", "fodt"] as WriterFormat[]).map((format) => (
+                  <button
+                    key={format}
+                    className="export-option"
+                    disabled={busy}
+                    onClick={() => void download(format)}
+                  >
+                    <FileText />
+                    <div>
+                      <strong>
+                        {format === "odt"
+                          ? "LibreOffice-Dokument (.odt)"
+                          : format === "ott"
+                            ? "LibreOffice-Vorlage (.ott)"
+                            : "Writer-XML (.fodt)"}
+                      </strong>
+                      <small>
+                        Text und grundlegende Formatierung. Formatgrenzen werden
+                        vor dem Export angezeigt.
+                      </small>
+                    </div>
+                    <Download size={22} />
+                  </button>
+                ))}
                 <button
                   className="export-option"
-                  onClick={() => download("html")}
+                  disabled={busy}
+                  onClick={() => void download("html")}
                 >
                   <FileText />
                   <div>
@@ -1060,22 +1084,30 @@ export default function App() {
                   </div>
                   <Download size={19} />
                 </button>
-                <button
-                  className="export-option"
-                  onClick={() => {
-                    setModal("preview");
-                  }}
-                >
-                  <Eye />
-                  <div>
-                    <strong>Drucken / als PDF ausgeben</strong>
-                    <small>
-                      Über den Druckdialog deines Browsers; PDF-Ausgabe abhängig
-                      vom Gerät.
-                    </small>
-                  </div>
-                  <ArrowRight size={19} />
-                </button>
+                {!native && (
+                  <button
+                    className="export-option"
+                    onClick={() => {
+                      setModal("preview");
+                    }}
+                  >
+                    <Eye />
+                    <div>
+                      <strong>Drucken / als PDF ausgeben</strong>
+                      <small>
+                        Über den Druckdialog deines Browsers; PDF-Ausgabe
+                        abhängig vom Gerät.
+                      </small>
+                    </div>
+                    <ArrowRight size={19} />
+                  </button>
+                )}
+                {native && (
+                  <p className="hint">
+                    PDF- und Druckausgabe sind in diesem Android-Testbuild noch
+                    nicht verfügbar.
+                  </p>
+                )}
               </>
             )}
             {modal === "find" && (
@@ -1169,12 +1201,14 @@ export default function App() {
                   className="print-content"
                   dangerouslySetInnerHTML={{ __html: editor?.getHTML() || "" }}
                 />
-                <button
-                  className="primary no-print"
-                  onClick={() => window.print()}
-                >
-                  Drucken / PDF
-                </button>
+                {!native && (
+                  <button
+                    className="primary no-print"
+                    onClick={() => window.print()}
+                  >
+                    Drucken / PDF
+                  </button>
+                )}
               </>
             )}
           </section>

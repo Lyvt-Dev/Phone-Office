@@ -39,13 +39,13 @@ npx cap open ios
 
 Android: Android Studio, SDK 36 und JDK 21. iOS: macOS, passende Xcode-Version und Signing. Die Android-Debug-APK wurde lokal gebaut und ihre Signatur geprüft. iOS-Kompilierung, Gerätespeicherung, native Datei-Downloads und Tastaturverhalten müssen auf echten Geräten geprüft und ergänzt werden. Ein erfolgreicher Build beweist keinen Gerätetest.
 
-## Erste Stufe
+## Aktueller Stand (0.2)
 
-- Responsive Startseite, Vorlagen, Suche, Kachel-/Listenansicht, Hell-/Dunkelmodus.
+- Responsive Startseite, Suche, Kachel-/Listenansicht, Hell-/Dunkelmodus.
 - Rich-Text mit Schrift, Größe, Farbe, Auszeichnung, Überschriften, Absatz-Ausrichtung und Zeilenabstand, Listen samt Listeneinzügen, Tabellen, lokalen Bildern und Links.
 - Rückgängig/Wiederholen, Wortzählung, Suchen/Ersetzen; Gerätebrowser stellt Rechtschreibprüfung bereit, sofern verfügbar.
 - Automatische lokale Speicherung nach Änderungen und Wiederherstellung nach Neuladen. Browser-Speicher ist keine dauerhafte Dateisicherung: regelmäßig exportieren. Speicherausfälle werden angezeigt, beschädigte Wiederherstellungsdaten nicht überschrieben.
-- TXT/HTML importieren und als neue Datei exportieren. Eingeschränkter DOCX-Import mit Verlustwarnung. Druckvorschau und Browser-Druckdialog.
+- ODT/OTT/FODT importieren und exportieren; SXW/STW importieren. TXT/HTML importieren und als neue Datei exportieren. Eingeschränkter DOCX-Import mit Verlustwarnung. Druckvorschau und Browser-Druckdialog.
 
 Siehe [Konzept und Formatmatrix](docs/CONCEPT.md) sowie [Ausbauplan](docs/ROADMAP.md). Nicht implementierte Funktionen sind dort und in der App gekennzeichnet. Keine behauptete vollständige Word-/Writer-Kompatibilität.
 
@@ -54,3 +54,5 @@ Siehe [Konzept und Formatmatrix](docs/CONCEPT.md) sowie [Ausbauplan](docs/ROADMA
 [GitHub-Releases](https://github.com/Lyvt-Dev/Phone-Office/releases) · [Installations- und Buildhinweise](docs/ANDROID-TEST-RELEASE.md)
 
 Ein Test-Tag (`v*-android-test*`) startet den Workflow für eine signierte Debug-APK und ein Vorab-Release. Die App heißt „Phone Office Test“ und benötigt keine kostenpflichtige Entwicklerlizenz zum Sideloading.
+
+[Writer-Dateiformate, Grenzen und Tests](docs/WRITER-SUPPORT.md): keine vollständige LibreOffice-Kompatibilität.

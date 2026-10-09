@@ -1,33 +1,26 @@
-# Technisches Konzept
+# Technisches Konzept – Phone Office 0.2
 
-## Plattformen und Module
+React 19, TypeScript und Tiptap/ProseMirror bilden den gemeinsamen lokalen Texteditor. Capacitor 8 stellt Android-/iOS-Hüllen bereit; Electron ist ausschließlich für Desktop-Systeme vorgesehen. Der Android-Testbuild wurde kompiliert. iOS-Kompilierung und Electron-Laufzeit sind weiterhin nicht bestätigt.
 
-React 19 + TypeScript + Vite bilden die gemeinsame Touch-Oberfläche. Tiptap / ProseMirror stellt Auswahl, Bearbeitung, Historie und Rich-Text-Struktur bereit. Capacitor 8 bindet die Oberfläche in Android und iOS ein; Electron 44 liefert die Desktop-Hülle mit deaktiviertem Node-Zugriff im Renderer, Kontextisolation und Sandbox. Electron ist kein iOS-/Android-Runtime.
+## Module
 
-`src/core` enthält Dokumentidentität und Wortzählung, `src/formats` Import-/Exportadapter und Bereinigung, `src/storage` die austauschbare lokale Storage-Schnittstelle, `src/App.tsx` Oberfläche und Editorsteuerung. Erste interne Persistenz: versionierte HTML-Dokumente mit ID, Titel, Quellformat und Änderungszeit. Für fortgeschrittene Office-Merkmale ist ein erweitertes strukturiertes Dokumentmodell nötig; HTML kann diese nicht zuverlässig abbilden. Vor deren Umsetzung Schema, Migrationen und Capability-Warnungen einführen.
+- `src/core`: Dokumentidentität, echte Änderungszeiten und Wortzählung mit Absatz-/Zellgrenzen.
+- `src/formats`: Bereinigung, TXT/HTML/DOCX-Import und separate OpenDocument-Adapter. ODT, OTT und FODT werden gelesen und geschrieben; SXW/STW werden als Legacy-Kopie gelesen.
+- `src/storage`: lokale Wiederherstellung und separate Dateiausgabe. Auf Android schreiben Filesystem/Share die Exportdatei lokal und öffnen die ausdrückliche Geräteauswahl.
+- `src/App.tsx`: Startseite, Editor, kontextabhängige Werkzeugbereiche und zugängliche Dialoge. Auf mobilen Geräten mindestens 48 Pixel große Touch-Flächen und lesbare Schrift.
 
-Importiert wird stets eine neue Kopie. Es gibt keinen Schreibzugriff auf Originaldateien. Externe Bilder, aktive Inhalte und nicht freigegebene Inline-CSS-Eigenschaften werden entfernt. Dateien werden nicht an einen Konvertierungsserver gesendet. Eingefügte Bilder werden als lokale Data-URLs eingebettet. Vor DOCX/HTML-Import und verlustbehaftetem TXT-Export erfolgt ein Hinweis. Explizites Öffnen externer Links kann Internetverkehr auslösen.
+Das interne Dokument ist eine versionierte HTML-Kopie mit ID, Titel, Quellformat und Änderungszeit. Dieses Schema kann erweiterte Writer-Funktionen nicht vollständig abbilden. Daher sind Originaldateien von der Bearbeitung getrennt und Formatverluste werden vor Import und Writer-Export gemeldet. Die aktuelle [Formatmatrix](WRITER-SUPPORT.md) unterscheidet implementierte Funktionen von Grenzen und unimplementierten Formaten.
 
-## Aktuell unterstützte Formate
+## Datenschutz und Speicherung
 
-| Format     | Import                 | Bearbeitung                  | Export              | Grenzen                                                                                                                                                       |
-| ---------- | ---------------------- | ---------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TXT        | Ja, UTF-8              | Text im Rich-Text-Editor     | Ja                  | Beim Export gehen alle Auszeichnungen, Bilder und Tabellenstruktur verloren; andere Textkodierungen nicht erkannt                                             |
-| HTML / HTM | Ja, bereinigt          | Unterstützte Editor-Struktur | HTML                | Keine Skripte, externen Bilder, Stylesheets oder originalgetreue Layouts. Erhaltene Inline-Stile auf sichere Textattribute beschränkt                         |
-| DOCX       | Eingeschränkt, Mammoth | HTML-Kopie                   | Nein                | Grundlegender Text, Struktur und Auszeichnung. Kein garantierter Erhalt von Layout, Kommentaren, Änderungsverfolgung, Noten und eingebetteten Office-Objekten |
-| DOC        | Nein                   | Nein                         | Nein                | Legacy-Binärformat; sichere Alternative: Kopie in Word/LibreOffice als DOCX oder HTML konvertieren                                                            |
-| ODT / OTT  | Nein                   | Nein                         | Nein                | Separate ODF-Adapter mit Tests erforderlich; derzeit Kopie außerhalb der App konvertieren                                                                     |
-| RTF        | Nein                   | Nein                         | Nein                | Separater Parser/Writer erforderlich; derzeit Kopie außerhalb der App konvertieren                                                                            |
-| PDF        | Nein                   | Nein                         | Browser-Druckdialog | PDF-Ausgabe nur wenn Browser/OS diese anbietet. Kein PDF-Viewer, keine Annotationen und keine direkte Inhaltsbearbeitung                                      |
+Dokumentverarbeitung erfolgt auf dem Gerät. Es gibt keine Serverkonvertierung oder automatische Cloud-Verbindung. Externe Bildquellen, aktive HTML-Inhalte und XML-Entitäten werden entfernt oder abgelehnt. ZIP-Import prüft CRCs und begrenzt Einträge sowie entpackte Größen.
 
-Dateierkennung kombiniert Endung mit HTML-Markup, ZIP-Signatur für DOCX und Ausschluss offensichtlicher Binärdaten. Eine ZIP-Signatur allein beweist kein DOCX: der Parser prüft anschließend das Archiv. Vollständige MIME-Erkennung und Kodierungswahl sind noch ausstehend.
+Die App speichert HTML-Dokumente im lokalen Browser-/WebView-Profil und stellt sie nach erneutem Öffnen wieder her. Das ist keine dauerhaft garantierte Dateisicherung oder zusätzliche Verschlüsselung. Speicherfehler werden sichtbar angezeigt; beschädigte Wiederherstellungsdaten werden nicht automatisch überschrieben. Eigene Dokumente regelmäßig als Datei sichern. Android-Dateiausgabe verwendet App-Cache und Systemauswahl; nur der Nutzer entscheidet über ein Ziel oder einen Empfänger.
 
-## Speicher, Grenzen und Prüfung
+## Ehrlicher Funktionsumfang
 
-Browser-localStorage wird synchron nach React-Änderungen aktualisiert. Das ist eine erste Wiederherstellung, keine garantierte Transaktion bei abruptem Prozessverlust. Daten sind nicht separat verschlüsselt. Gerätespeicherbereinigung kann sie entfernen. Storage-Quota-Probleme lösen eine Exportaufforderung aus. Noch keine Cloud-Verbindung; Storage-Interface ist der Erweiterungspunkt, kein fertiger Cloud-Adapter. Keine Kamera-/Mikrofonfunktionen oder entsprechenden Berechtigungen.
+Auf der Startseite erscheinen ausschließlich vom Nutzer erstellte und importierte Dokumente. Keine vorbefüllten Projektdokumente, Beispielvorlagen, erfundenen Benutzerkonten oder Textimitate in Vorschauen. Bereits erstellte Dateien bleiben erhalten.
 
-Importlimit 20 MB, Bilder unter 5 MB. DOCX-Verarbeitung läuft derzeit im Hauptthread; sehr große Archive können mehr entpackten Speicher beanspruchen. Stabilität großer Dokumente ist **nicht nachgewiesen**. Worker-Verarbeitung, Archivlimits, IndexedDB und messbare Leistungstests sind vor Produktion erforderlich.
+Writer-Grundformatierung, Text, Überschriften, Listen, Tabellen, Links und eingebettete Bilddaten sind implementiert und mit Rundlauftests geprüft. ODF-1.3-Exporte werden unabhängig mit dem ODF Toolkit Validator und den offiziellen Relax-NG-Schemas geprüft. Kein Nachweis vollständiger LibreOffice-Funktions- oder Layoutkompatibilität. Calc/Impress/Draw/Base brauchen eigene Dokumentkerne.
 
-Seitenansicht steuert Breite und Rand der aktuellen Sitzung. Sie erzeugt keine echten paginierten Dokumente und keine im Dateiformat erhaltenen Seiteneinstellungen. Browserdruck bestimmt Seitenformat und Umbrüche. Suchen/Ersetzen arbeitet exakt und innerhalb einzelner Textknoten, nicht über Formatgrenzen. Rechtschreibprüfung hängt vom Gerätebrowser und installierten Wörterbüchern ab.
-
-Screenreader-Namen, Tastaturfokus im Dialog, Escape, responsive Layout, System-Schrift und Hell-/Dunkelmodus sind vorhanden; vollständige WCAG-Prüfung, Skalierung und reale VoiceOver/TalkBack-Tests stehen aus. VisualViewport berücksichtigt Tastaturhöhe; reale mobile Tastaturtests sind ausstehend.
+Seitenansicht ist eine Sitzungsansicht und keine echte Pagination. Noten und Kommentare werden beim Import beschrifteter Text; Änderungsverfolgung und Office-Objekte gehen verloren. Native Druck-/PDF-Ausgabe, große-Dokument-Leistung und reale Screenreader-/Tastatur-/Dateidialogtests sind noch ausstehend. Die Rechtschreibprüfung hängt vom Gerätebrowser und seinen Wörterbüchern ab.

@@ -2,6 +2,8 @@ name: Android Test APK
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*-android-test*"
   workflow_dispatch:
@@ -31,9 +33,18 @@ jobs:
       - name: Install dependencies and validate web app
         run: |
           npm ci --no-audit --no-fund
-          npm test
+          PHONE_OFFICE_ODF_VALIDATION_DIR="$RUNNER_TEMP/odf-validation" npm test
           npm run build
           npx cap sync android
+      - name: Validate OpenDocument exports against ODF 1.3
+        run: |
+          validator="$RUNNER_TEMP/odfvalidator.jar"
+          curl --fail --location --retry 3 https://repo.maven.apache.org/maven2/org/odftoolkit/odfvalidator/0.13.0/odfvalidator-0.13.0-jar-with-dependencies.jar --output "$validator"
+          printf '%s  %s\n' 'df4ac79cea8e57376f940e3de059abe4cce44876' "$validator" | sha1sum --check --status
+          java -jar "$validator" "$RUNNER_TEMP/odf-validation/"*.odt "$RUNNER_TEMP/odf-validation/"*.ott
+          python3 -m venv "$RUNNER_TEMP/odf-validation-python"
+          "$RUNNER_TEMP/odf-validation-python/bin/pip" install lxml==6.1.1
+          "$RUNNER_TEMP/odf-validation-python/bin/python" scripts/validate-odf.py "$validator" "$RUNNER_TEMP/odf-validation"
       - name: Prepare verified Android SDK
         run: |
           sdk_dir="$RUNNER_TEMP/phone-office-android-sdk"

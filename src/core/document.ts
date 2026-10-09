@@ -18,6 +18,13 @@ export const createDocument = (
 export function wordCount(html: string): number {
   const element = document.createElement("div");
   element.innerHTML = html;
-  return (element.textContent || "").trim().split(/\s+/u).filter(Boolean)
-    .length;
+  element
+    .querySelectorAll("p,h1,h2,h3,h4,h5,h6,li,td,th,br")
+    .forEach((el) => el.append(" "));
+  const text = element.textContent || "";
+  if (typeof Intl.Segmenter === "function")
+    return Array.from(
+      new Intl.Segmenter("de", { granularity: "word" }).segment(text),
+    ).filter((part) => part.isWordLike).length;
+  return (text.match(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*/gu) || []).length;
 }
