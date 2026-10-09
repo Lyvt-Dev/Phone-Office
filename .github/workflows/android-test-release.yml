@@ -1,0 +1,81 @@
+name: Android Test APK
+
+on:
+  push:
+    tags:
+      - "v*-android-test*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Restore test signing identity
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: phone-office-debug-signing-v1
+      - name: Install dependencies and validate web app
+        run: |
+          npm ci --no-audit --no-fund
+          npm test
+          npm run build
+          npx cap sync android
+      - name: Prepare Android SDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Assemble signed debug APK
+        env:
+          PHONE_OFFICE_VERSION_CODE: ${{ github.run_number }}
+        working-directory: android
+        run: bash gradlew --no-daemon --max-workers=2 assembleDebug
+      - name: Verify and package APK
+        run: |
+          mkdir -p artifacts
+          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/phone-office-android-test.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs artifacts/phone-office-android-test.apk > artifacts/signature.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging artifacts/phone-office-android-test.apk > artifacts/package-info.txt
+          grep "package: name='dev.lyvt.phoneoffice.debug'" artifacts/package-info.txt
+          grep 'application-debuggable' artifacts/package-info.txt
+          if grep -q 'application-testOnly' artifacts/package-info.txt; then
+            echo 'Refusing an APK that requires adb install -t'
+            exit 1
+          fi
+          cd artifacts
+          sha256sum phone-office-android-test.apk > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phone-office-android-test
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: phone-office-android-test
+          path: artifacts
+      - name: Publish test prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android-test.apk artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt --repo "$GITHUB_REPOSITORY" --verify-tag --prerelease --title "Phone Office Android-Test $GITHUB_REF_NAME" --notes-file docs/ANDROID-TEST-RELEASE.md

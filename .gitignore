@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.log
+*.tsbuildinfo
+test-results/
+playwright-report/
+artifacts/
+*.keystore
+*.jks
