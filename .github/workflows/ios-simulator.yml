@@ -1,0 +1,50 @@
+name: iPhone and iPad Simulator Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  simulator:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Select newest installed Xcode
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          choices = [(tuple(map(int, re.findall(r'\d+', p.stem))), p) for p in Path('/Applications').glob('Xcode_*.app') if re.fullmatch(r'Xcode_\d+(?:\.\d+)*', p.stem)]
+          if choices:
+              selected = max(choices)[1] / 'Contents/Developer'
+              subprocess.run(['sudo', 'xcode-select', '--switch', str(selected)], check=True)
+          subprocess.run(['xcodebuild', '-version'], check=True)
+          PY
+      - name: Prepare local iOS app
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          npx cap sync ios
+      - name: Compile universal iPhone and iPad simulator app
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/phone-office-ios" CODE_SIGNING_ALLOWED=NO build
+      - name: Package simulator app
+        run: |
+          ditto -c -k --keepParent "$RUNNER_TEMP/phone-office-ios/Build/Products/Debug-iphonesimulator/App.app" "$RUNNER_TEMP/phone-office-ios-simulator.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phone-office-ios-simulator
+          path: ${{ runner.temp }}/phone-office-ios-simulator.zip
+          if-no-files-found: error
+          retention-days: 14

@@ -1,9 +1,11 @@
+import type { Notebook } from "../notes/model";
 export interface OfficeDocument {
   id: string;
   title: string;
   html: string;
   updatedAt: string;
   format: string;
+  notebook?: Notebook;
 }
 export const createDocument = (
   title = "Unbenanntes Dokument",

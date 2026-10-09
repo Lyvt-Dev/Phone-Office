@@ -12,6 +12,14 @@ export default defineConfig({
       : {},
   },
   projects: [
+    {
+      name: "tablet-landscape",
+      use: { viewport: { width: 1366, height: 1024 }, hasTouch: true },
+    },
+    {
+      name: "tablet",
+      use: { viewport: { width: 1024, height: 1366 }, hasTouch: true },
+    },
     { name: "desktop", use: { viewport: { width: 1440, height: 1000 } } },
     {
       name: "mobile",

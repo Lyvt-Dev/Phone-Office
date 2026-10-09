@@ -36,6 +36,10 @@ jobs:
           PHONE_OFFICE_ODF_VALIDATION_DIR="$RUNNER_TEMP/odf-validation" npm test
           npm run build
           npx cap sync android
+      - name: Validate phone and tablet editing with browser input
+        run: |
+          npx playwright install --with-deps chromium
+          PHONE_OFFICE_PRODUCTION=1 npm run test:e2e
       - name: Validate OpenDocument exports against ODF 1.3
         run: |
           validator="$RUNNER_TEMP/odfvalidator.jar"

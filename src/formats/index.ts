@@ -1,6 +1,12 @@
 import DOMPurify from "dompurify";
 export const formatSupport = [
   {
+    name: "Phone Office Notizbuch (.pnote)",
+    status: "Import & Export",
+    detail:
+      "Alle Handschriftseiten, Fach und getippter Text bleiben als bearbeitbare Notizkopie erhalten. SVG gibt eine einzelne Schreibseite aus; Office-/Textformate enthalten nur getippten Text. Keine Handschrifterkennung.",
+  },
+  {
     name: "HTML / HTM",
     status: "Import & Export",
     detail:

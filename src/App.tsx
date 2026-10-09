@@ -1,3 +1,6 @@
+import { NotebookEditor } from "./notes/NotebookEditor";
+import { newNotebook, pageSvg, type NotePage } from "./notes/model";
+import { exportNote, importNote } from "./notes/format";
 import { useEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { EditorContent, useEditor } from "@tiptap/react";
@@ -109,6 +112,7 @@ export default function App() {
   const [modal, setModal] = useState<
     "formats" | "export" | "find" | "layout" | "preview" | null
   >(null);
+  const [noteMode, setNoteMode] = useState<"ink" | "text">("ink");
   const [toolGroup, setToolGroup] = useState("text");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(boot.error);
@@ -231,6 +235,7 @@ export default function App() {
   }, [editor]);
   const open = (d: OfficeDocument) => {
     setActive(d.id);
+    setNoteMode("ink");
     setSidebar(false);
   };
   const newDoc = (title?: string, html?: string) => {
@@ -242,6 +247,39 @@ export default function App() {
     setDocs((prev) => [d, ...prev]);
     open(d);
   };
+  function newNote() {
+    if (boot.error) {
+      setNotice(boot.error);
+      return;
+    }
+    const d = {
+      ...createDocument("Unbenannte Notiz"),
+      format: "NOTIZ",
+      notebook: newNotebook(),
+    };
+    setDocs((prev) => [d, ...prev]);
+    open(d);
+  }
+  async function noteExport(page?: NotePage) {
+    if (!doc || busy) return;
+    setBusy(true);
+    try {
+      const name = (doc.title.trim() || "Notiz")
+        .replace(/[/\\:*?"<>|]/g, "_")
+        .slice(0, 120);
+      await saveExport(
+        page
+          ? new Blob([pageSvg(page)], { type: "image/svg+xml" })
+          : exportNote(doc),
+        name + (page ? "-seite.svg" : ".pnote"),
+      );
+      setModal(null);
+    } catch (e) {
+      setNotice("Notizexport fehlgeschlagen: " + (e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   async function importDocument(file?: File) {
     if (!file) return;
     if (boot.error) {
@@ -249,6 +287,16 @@ export default function App() {
       return;
     }
     try {
+      if (file.name.toLowerCase().endsWith(".pnote")) {
+        if (file.size > 20 * 1024 * 1024)
+          throw new Error("Notizdatei ist zu groß (maximal 20 MB).");
+        const d = importNote(await file.text());
+        setDocs((prev) => [d, ...prev]);
+        open(d);
+        setNotice("Notizbuch als neue lokale Kopie geöffnet.");
+        if (fileInput.current) fileInput.current.value = "";
+        return;
+      }
       const result = await importFile(file);
       if (
         result.warnings.length &&
@@ -273,6 +321,13 @@ export default function App() {
   }
   async function download(format: "html" | "txt" | WriterFormat) {
     if (!doc || !editor || busy) return;
+    if (
+      doc.notebook &&
+      !window.confirm(
+        "Dieser Export enthält nur getippten Text. Handschrift und Notizseiten fehlen. Für eine vollständige Sicherung bitte Notizbuch (.pnote) wählen. Trotzdem Text exportieren?",
+      )
+    )
+      return;
     setBusy(true);
     try {
       let blob: Blob;
@@ -392,7 +447,7 @@ export default function App() {
         ref={fileInput}
         type="file"
         hidden
-        accept=".odt,.ott,.fodt,.sxw,.stw,.txt,.html,.htm,.docx,.doc,.rtf,.pdf"
+        accept=".pnote,.odt,.ott,.fodt,.sxw,.stw,.txt,.html,.htm,.docx,.doc,.rtf,.pdf"
         onChange={(e) => void importDocument(e.target.files?.[0])}
       />
       <input
@@ -550,6 +605,16 @@ export default function App() {
               </div>
             </div>
             <section className="quick-actions">
+              <button className="quick-card create" onClick={newNote}>
+                <span className="quick-icon">
+                  <FileText size={25} />
+                </span>
+                <div>
+                  <strong>Neue Schulnotiz</strong>
+                  <p>Handschrift, Zeichnungen und getippter Text</p>
+                </div>
+                <ArrowRight size={20} />
+              </button>
               <button
                 className="quick-card create"
                 aria-label="Neues Dokument"
@@ -642,7 +707,10 @@ export default function App() {
                               day: "numeric",
                               month: "short",
                             })}{" "}
-                            · {wordCount(d.html)} Wörter
+                            · {wordCount(d.html)} Wörter{" "}
+                            {d.notebook
+                              ? `· ${d.notebook.pages.length} Notizseiten`
+                              : ""}
                           </small>
                         </div>
                       </button>
@@ -694,6 +762,7 @@ export default function App() {
                 <input
                   className="document-title"
                   aria-label="Dokumenttitel"
+                  maxLength={500}
                   value={doc?.title || ""}
                   onChange={(e) =>
                     setDocs((prev) =>
@@ -733,226 +802,276 @@ export default function App() {
                 </button>
               </div>
             </div>
-            <div
-              className="tool-tabs"
-              role="tablist"
-              aria-label="Werkzeugbereich"
-            >
-              {[
-                ["text", "Text"],
-                ["paragraph", "Absatz"],
-                ["insert", "Einfügen"],
-                ["more", "Mehr"],
-              ].map(([id, label]) => (
+            {doc?.notebook && (
+              <div className="note-mode" role="tablist" aria-label="Notizmodus">
                 <button
-                  key={id}
                   role="tab"
-                  aria-selected={toolGroup === id}
-                  aria-controls="editor-tools"
-                  onClick={() => setToolGroup(toolGroup === id ? "none" : id)}
+                  aria-selected={noteMode === "ink"}
+                  onClick={() => setNoteMode("ink")}
                 >
-                  {label}
+                  Handschrift
                 </button>
-              ))}
-            </div>
-            <div
-              className={"toolbar group-" + toolGroup}
-              role="toolbar"
-              aria-label="Textformatierung"
-              id="editor-tools"
-            >
-              {tool("Rückgängig", <Undo2 size={18} />, () => {
-                editor?.chain().focus().undo().run();
-              })}
-              {tool("Wiederholen", <Redo2 size={18} />, () => {
-                editor?.chain().focus().redo().run();
-              })}
-              <span className="separator" />
-              <select
-                aria-label="Formatvorlage"
-                data-toolgroup="text"
-                value={
-                  editor?.isActive("heading", { level: 1 })
-                    ? "h1"
-                    : editor?.isActive("heading", { level: 2 })
-                      ? "h2"
-                      : "p"
+                <button
+                  role="tab"
+                  aria-selected={noteMode === "text"}
+                  onClick={() => setNoteMode("text")}
+                >
+                  Text
+                </button>
+              </div>
+            )}
+            {doc?.notebook && noteMode === "ink" ? (
+              <NotebookEditor
+                key={doc.id}
+                notebook={doc.notebook}
+                onNotice={setNotice}
+                onExportPage={(p) => void noteExport(p)}
+                onChange={(notebook) =>
+                  setDocs((prev) =>
+                    prev.map((d) =>
+                      d.id === active
+                        ? {
+                            ...d,
+                            notebook,
+                            updatedAt: new Date().toISOString(),
+                          }
+                        : d,
+                    ),
+                  )
                 }
-                onChange={(e) => {
-                  e.target.value === "p"
-                    ? editor?.chain().focus().setParagraph().run()
-                    : editor
+              />
+            ) : (
+              <>
+                <div
+                  className="tool-tabs"
+                  role="tablist"
+                  aria-label="Werkzeugbereich"
+                >
+                  {[
+                    ["text", "Text"],
+                    ["paragraph", "Absatz"],
+                    ["insert", "Einfügen"],
+                    ["more", "Mehr"],
+                  ].map(([id, label]) => (
+                    <button
+                      key={id}
+                      role="tab"
+                      aria-selected={toolGroup === id}
+                      aria-controls="editor-tools"
+                      onClick={() =>
+                        setToolGroup(toolGroup === id ? "none" : id)
+                      }
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div
+                  className={"toolbar group-" + toolGroup}
+                  role="toolbar"
+                  aria-label="Textformatierung"
+                  id="editor-tools"
+                >
+                  {tool("Rückgängig", <Undo2 size={18} />, () => {
+                    editor?.chain().focus().undo().run();
+                  })}
+                  {tool("Wiederholen", <Redo2 size={18} />, () => {
+                    editor?.chain().focus().redo().run();
+                  })}
+                  <span className="separator" />
+                  <select
+                    aria-label="Formatvorlage"
+                    data-toolgroup="text"
+                    value={
+                      editor?.isActive("heading", { level: 1 })
+                        ? "h1"
+                        : editor?.isActive("heading", { level: 2 })
+                          ? "h2"
+                          : "p"
+                    }
+                    onChange={(e) => {
+                      e.target.value === "p"
+                        ? editor?.chain().focus().setParagraph().run()
+                        : editor
+                            ?.chain()
+                            .focus()
+                            .toggleHeading({
+                              level: e.target.value === "h1" ? 1 : 2,
+                            })
+                            .run();
+                      refresh((n) => n + 1);
+                    }}
+                  >
+                    <option value="p">Normaler Text</option>
+                    <option value="h1">Überschrift 1</option>
+                    <option value="h2">Überschrift 2</option>
+                  </select>
+                  <select
+                    aria-label="Schriftart"
+                    data-toolgroup="text"
+                    onChange={(e) =>
+                      editor
                         ?.chain()
                         .focus()
-                        .toggleHeading({
-                          level: e.target.value === "h1" ? 1 : 2,
-                        })
-                        .run();
-                  refresh((n) => n + 1);
-                }}
-              >
-                <option value="p">Normaler Text</option>
-                <option value="h1">Überschrift 1</option>
-                <option value="h2">Überschrift 2</option>
-              </select>
-              <select
-                aria-label="Schriftart"
-                data-toolgroup="text"
-                onChange={(e) =>
-                  editor?.chain().focus().setFontFamily(e.target.value).run()
-                }
-              >
-                <option value="Arial">Arial</option>
-                <option value="Georgia">Georgia</option>
-                <option value="Verdana">Verdana</option>
-                <option value="monospace">Monospace</option>
-              </select>
-              <select
-                aria-label="Schriftgröße"
-                data-toolgroup="text"
-                defaultValue="16px"
-                onChange={(e) =>
-                  editor?.chain().focus().setFontSize(e.target.value).run()
-                }
-              >
-                {[12, 14, 16, 18, 24, 32].map((n) => (
-                  <option key={n} value={n + "px"}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-              <span className="separator" />
-              {tool(
-                "Fett",
-                <Bold size={18} />,
-                () => {
-                  editor?.chain().focus().toggleBold().run();
-                  refresh((n) => n + 1);
-                },
-                editor?.isActive("bold"),
-              )}
-              {tool(
-                "Kursiv",
-                <Italic size={18} />,
-                () => {
-                  editor?.chain().focus().toggleItalic().run();
-                  refresh((n) => n + 1);
-                },
-                editor?.isActive("italic"),
-              )}
-              {tool(
-                "Unterstrichen",
-                <Underline size={18} />,
-                () => {
-                  editor?.chain().focus().toggleUnderline().run();
-                  refresh((n) => n + 1);
-                },
-                editor?.isActive("underline"),
-              )}
-              {tool("Durchgestrichen", <Strikethrough size={18} />, () => {
-                editor?.chain().focus().toggleStrike().run();
-                refresh((n) => n + 1);
-              })}
-              <label
-                data-toolgroup="text"
-                className="color-tool"
-                title="Textfarbe"
-              >
-                A
-                <input
-                  type="color"
-                  aria-label="Textfarbe"
-                  defaultValue="#334155"
-                  onChange={(e) =>
-                    editor?.chain().focus().setColor(e.target.value).run()
-                  }
-                />
-              </label>
-              <span className="separator" />
-              {tool("Linksbündig", <AlignLeft size={18} />, () => {
-                editor
-                  ?.chain()
-                  .focus()
-                  .updateAttributes("paragraph", { textAlign: "left" })
-                  .updateAttributes("heading", { textAlign: "left" })
-                  .run();
-              })}
-              {tool("Zentriert", <AlignCenter size={18} />, () => {
-                editor
-                  ?.chain()
-                  .focus()
-                  .updateAttributes("paragraph", { textAlign: "center" })
-                  .updateAttributes("heading", { textAlign: "center" })
-                  .run();
-              })}
-              {tool("Rechtsbündig", <AlignRight size={18} />, () => {
-                editor
-                  ?.chain()
-                  .focus()
-                  .updateAttributes("paragraph", { textAlign: "right" })
-                  .updateAttributes("heading", { textAlign: "right" })
-                  .run();
-              })}
-              {tool("Aufzählung", <ListIcon size={18} />, () => {
-                editor?.chain().focus().toggleBulletList().run();
-              })}
-              {tool("Nummerierte Liste", <ListOrdered size={18} />, () => {
-                editor?.chain().focus().toggleOrderedList().run();
-              })}
-              {editor?.isActive("listItem") &&
-                tool(
-                  "Listeneinzug vergrößern",
-                  <ArrowRight size={18} />,
-                  () => {
-                    editor?.chain().focus().sinkListItem("listItem").run();
-                  },
-                )}
-              {editor?.isActive("listItem") &&
-                tool(
-                  "Listeneinzug verkleinern",
-                  <ArrowLeft size={18} />,
-                  () => {
-                    editor?.chain().focus().liftListItem("listItem").run();
-                  },
-                )}
-              <span className="separator" />
-              {tool("Tabelle einfügen", <Table2 size={18} />, () => {
-                editor
-                  ?.chain()
-                  .focus()
-                  .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-                  .run();
-              })}
-              {tool("Bild vom Gerät einfügen", <ImagePlus size={18} />, () =>
-                imageInput.current?.click(),
-              )}
-              {tool("Link einfügen", <Link2 size={18} />, () => {
-                const url = window.prompt("Link (https://…)");
-                if (url && /^https?:\/\//i.test(url))
-                  editor?.chain().focus().setLink({ href: url }).run();
-              })}
-              {tool("Suchen und Ersetzen", <Search size={18} />, () =>
-                setModal("find"),
-              )}
-              {tool("Seitenlayout", <Settings2 size={18} />, () =>
-                setModal("layout"),
-              )}
-            </div>
-            <div className="writing-space">
-              <div
-                className={"paper " + (margin === "narrow" ? "narrow" : "")}
-                style={{ maxWidth: page === "A5" ? 560 : 800 }}
-              >
-                <EditorContent editor={editor} />
-              </div>
-            </div>
+                        .setFontFamily(e.target.value)
+                        .run()
+                    }
+                  >
+                    <option value="Arial">Arial</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="monospace">Monospace</option>
+                  </select>
+                  <select
+                    aria-label="Schriftgröße"
+                    data-toolgroup="text"
+                    defaultValue="16px"
+                    onChange={(e) =>
+                      editor?.chain().focus().setFontSize(e.target.value).run()
+                    }
+                  >
+                    {[12, 14, 16, 18, 24, 32].map((n) => (
+                      <option key={n} value={n + "px"}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="separator" />
+                  {tool(
+                    "Fett",
+                    <Bold size={18} />,
+                    () => {
+                      editor?.chain().focus().toggleBold().run();
+                      refresh((n) => n + 1);
+                    },
+                    editor?.isActive("bold"),
+                  )}
+                  {tool(
+                    "Kursiv",
+                    <Italic size={18} />,
+                    () => {
+                      editor?.chain().focus().toggleItalic().run();
+                      refresh((n) => n + 1);
+                    },
+                    editor?.isActive("italic"),
+                  )}
+                  {tool(
+                    "Unterstrichen",
+                    <Underline size={18} />,
+                    () => {
+                      editor?.chain().focus().toggleUnderline().run();
+                      refresh((n) => n + 1);
+                    },
+                    editor?.isActive("underline"),
+                  )}
+                  {tool("Durchgestrichen", <Strikethrough size={18} />, () => {
+                    editor?.chain().focus().toggleStrike().run();
+                    refresh((n) => n + 1);
+                  })}
+                  <label
+                    data-toolgroup="text"
+                    className="color-tool"
+                    title="Textfarbe"
+                  >
+                    A
+                    <input
+                      type="color"
+                      aria-label="Textfarbe"
+                      defaultValue="#334155"
+                      onChange={(e) =>
+                        editor?.chain().focus().setColor(e.target.value).run()
+                      }
+                    />
+                  </label>
+                  <span className="separator" />
+                  {tool("Linksbündig", <AlignLeft size={18} />, () => {
+                    editor
+                      ?.chain()
+                      .focus()
+                      .updateAttributes("paragraph", { textAlign: "left" })
+                      .updateAttributes("heading", { textAlign: "left" })
+                      .run();
+                  })}
+                  {tool("Zentriert", <AlignCenter size={18} />, () => {
+                    editor
+                      ?.chain()
+                      .focus()
+                      .updateAttributes("paragraph", { textAlign: "center" })
+                      .updateAttributes("heading", { textAlign: "center" })
+                      .run();
+                  })}
+                  {tool("Rechtsbündig", <AlignRight size={18} />, () => {
+                    editor
+                      ?.chain()
+                      .focus()
+                      .updateAttributes("paragraph", { textAlign: "right" })
+                      .updateAttributes("heading", { textAlign: "right" })
+                      .run();
+                  })}
+                  {tool("Aufzählung", <ListIcon size={18} />, () => {
+                    editor?.chain().focus().toggleBulletList().run();
+                  })}
+                  {tool("Nummerierte Liste", <ListOrdered size={18} />, () => {
+                    editor?.chain().focus().toggleOrderedList().run();
+                  })}
+                  {editor?.isActive("listItem") &&
+                    tool(
+                      "Listeneinzug vergrößern",
+                      <ArrowRight size={18} />,
+                      () => {
+                        editor?.chain().focus().sinkListItem("listItem").run();
+                      },
+                    )}
+                  {editor?.isActive("listItem") &&
+                    tool(
+                      "Listeneinzug verkleinern",
+                      <ArrowLeft size={18} />,
+                      () => {
+                        editor?.chain().focus().liftListItem("listItem").run();
+                      },
+                    )}
+                  <span className="separator" />
+                  {tool("Tabelle einfügen", <Table2 size={18} />, () => {
+                    editor
+                      ?.chain()
+                      .focus()
+                      .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                      .run();
+                  })}
+                  {tool(
+                    "Bild vom Gerät einfügen",
+                    <ImagePlus size={18} />,
+                    () => imageInput.current?.click(),
+                  )}
+                  {tool("Link einfügen", <Link2 size={18} />, () => {
+                    const url = window.prompt("Link (https://…)");
+                    if (url && /^https?:\/\//i.test(url))
+                      editor?.chain().focus().setLink({ href: url }).run();
+                  })}
+                  {tool("Suchen und Ersetzen", <Search size={18} />, () =>
+                    setModal("find"),
+                  )}
+                  {tool("Seitenlayout", <Settings2 size={18} />, () =>
+                    setModal("layout"),
+                  )}
+                </div>
+                <div className="writing-space">
+                  <div
+                    className={"paper " + (margin === "narrow" ? "narrow" : "")}
+                    style={{ maxWidth: page === "A5" ? 560 : 800 }}
+                  >
+                    <EditorContent editor={editor} />
+                  </div>
+                </div>
+              </>
+            )}
             <div className="editor-status">
               <span>
                 {wordCount(doc?.html || "")} Wörter · Rechtschreibung durch
                 Gerätebrowser
               </span>
               <span>
-                {page} · {saveStatus}
+                {doc?.notebook ? "Notizbuch" : page} · {saveStatus}
               </span>
             </div>
           </div>
@@ -1020,6 +1139,30 @@ export default function App() {
               <>
                 <div className="eyebrow">ALS NEUE DATEI SPEICHERN</div>
                 <h2>Dein Dokument mitnehmen</h2>
+                {doc?.notebook && (
+                  <>
+                    <button
+                      className="export-option"
+                      disabled={busy}
+                      onClick={() => void noteExport()}
+                    >
+                      <Download />
+                      <div>
+                        <strong>Notizbuch (.pnote)</strong>
+                        <small>
+                          Alle Seiten, Handschrift und getippter Text. Wieder
+                          bearbeitbar in Phone Office.
+                        </small>
+                      </div>
+                    </button>
+                    <p className="hint">
+                      Office-/Textformate enthalten nur den getippten Text.
+                      Handschrift bleibt ausschließlich in der
+                      Notizbuch-Sicherung; einzelne Seiten lassen sich als SVG
+                      ausgeben.
+                    </p>
+                  </>
+                )}
                 <p>
                   Jeder Export erzeugt eine neue Kopie. Auf Android öffnet sich
                   die Auswahl zum Speichern oder Teilen. Wähle den Speicherort
@@ -1199,7 +1342,17 @@ export default function App() {
                 </p>
                 <div
                   className="print-content"
-                  dangerouslySetInnerHTML={{ __html: editor?.getHTML() || "" }}
+                  dangerouslySetInnerHTML={{
+                    __html:
+                      (doc?.notebook
+                        ? doc.notebook.pages
+                            .map(
+                              (p) =>
+                                `<div class="note-preview-page">${pageSvg(p)}</div>`,
+                            )
+                            .join("")
+                        : "") + (editor?.getHTML() || ""),
+                  }}
                 />
                 {!native && (
                   <button

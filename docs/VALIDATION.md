@@ -1,4 +1,11 @@
-# Validierungsstand 0.2.0
+# Validierungsstand 0.3.0
+
+- 45 Unit-Tests bestanden: einschließlich Notizkern, Papier/Seiten, Strichdruck, Radierertreffer, Sicherung und erneutem Import, Datengrenzen und HTML-Bereinigung.
+- 52 Browser-Szenarien: Dokument-/Writer-Rundläufe sowie Schulnotizen auf Desktop, Smartphone, Tablet hoch/quer. Notiztests prüfen Druckeingabe über Chromium, Rückgängig/Wiederholen, Fingerfilter, abgebrochene Striche, Textmarker, Rotation, SVG sowie vollständige `.pnote`-Sicherung mit erneutem Import als unabhängige Kopie. Keine ungefangenen Browserfehler in den Notizszenarien.
+- TypeScript/Vite-Build, Android-/iOS-Synchronisierung und Android-Debug-Build 0.3.0 erfolgreich. Der Haupt-Chunk ist etwa 785 kB unkomprimiert.
+- Kein physischer S-Pen-/Apple-Pencil-Test, keine iOS-Kompilierung/Signierung und keine Safari-WebKit-Laufzeitprüfung. Details: `NOTES.md`.
+
+## Vorherige Formatvalidierung 0.2.0
 
 Am 9. Oktober 2026 in der Cloud ausgeführt:
 

@@ -1,3 +1,4 @@
+import { isNotebook } from "../notes/model";
 import type { OfficeDocument } from "../core/document";
 const KEY = "phone-office.documents.v1";
 export interface DocumentStorage {
@@ -18,7 +19,8 @@ export const localStorageAdapter: DocumentStorage = {
           typeof d.title === "string" &&
           typeof d.html === "string" &&
           typeof d.updatedAt === "string" &&
-          typeof d.format === "string",
+          typeof d.format === "string" &&
+          (d.notebook === undefined || isNotebook(d.notebook)),
       )
     )
       throw new Error(

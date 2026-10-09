@@ -8,3 +8,5 @@
 6. **Große Dokumente und Produktion.** Worker, Erweiterung der vorhandenen ODF-Entpacklimits, inkrementelle Speicherung, Leistungsmessung, paginierte/virtuelle Ansichten, UI-Entkopplung, WCAG-/VoiceOver-/TalkBack-Tests und Cloud-Adapter mit expliziter Freigabe. Benchmarks auf günstigen Android-Geräten und älteren iPhones.
 
 Jede Stufe erhält eigene Tests und Abnahmekriterien. Nicht implementierte Punkte bleiben in der Oberfläche als Grenzen dokumentiert; Projektgerüste gelten nicht als getestete native App.
+
+Schulnotizen 0.3: separater Handschriftkern mit Seiten/Papier, Stift/Textmarker/Radierer, Druckdaten, `.pnote`-Sicherung und SVG-Seiten implementiert. Tablet-Browserprüfungen vorhanden. Als nächste Geräteabnahme folgen physischer S Pen, Apple Pencil auf kompatiblem iPad sowie iOS-Auslieferung. Handschrifterkennung, PDF-Annotationen und native Stift-SDKs sind weiter offen.

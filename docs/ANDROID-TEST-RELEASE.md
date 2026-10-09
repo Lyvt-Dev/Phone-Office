@@ -7,6 +7,10 @@ Diese APK ist ein **mit einem Android-Debug-Schlüssel signierter Testbuild**, k
 - Lokaler Editor mit ODT-/OTT-/FODT-Import und -Export, SXW-/STW-Import, TXT-/HTML-Import, begrenztem DOCX-Import und Wiederherstellung. Keine Beispielvorlagen oder erfundenen Dokumente. Formatgrenzen stehen in der App und in `docs/CONCEPT.md`.
 - Native Dateiausgabe verwendet jetzt einen lokalen Cache und die Auswahl zum Speichern/Teilen. Dieser Dialog, Druck/PDF und weitere System-Integration sind noch nicht auf Samsung-Geräten geprüft. Dieser Build dient dem ersten Gerätetest, nicht der zuverlässigen Dokumentarchivierung. Zum Testen Kopien verwenden.
 
+## Schulnotizen ab 0.3
+
+Neue Schulnotiz: Handschriftseiten mit Stift, Textmarker und Radierer; Fach, kariert/liniert/leer, getippter Text, lokale Wiederherstellung, `.pnote`-Sicherung und einzelne SVG-Seiten. Tablet-Ansichten in Hoch-/Querformat sind browsergetestet. Physische S-Pen-/Apple-Pencil-Bedienung ist noch nicht geprüft. Apple Pencil benötigt ein kompatibles iPad; diese APK ist ausschließlich Android. Siehe `docs/NOTES.md`. Office-Exporte enthalten nur getippten Text und zeigen dazu eine Warnung.
+
 ## Installation auf Samsung
 
 1. Unter „Assets“ die Datei **phone-office-android-test.apk** herunterladen.

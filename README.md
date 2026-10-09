@@ -56,3 +56,5 @@ Siehe [Konzept und Formatmatrix](docs/CONCEPT.md) sowie [Ausbauplan](docs/ROADMA
 Ein Test-Tag (`v*-android-test*`) startet den Workflow für eine signierte Debug-APK und ein Vorab-Release. Die App heißt „Phone Office Test“ und benötigt keine kostenpflichtige Entwicklerlizenz zum Sideloading.
 
 [Writer-Dateiformate, Grenzen und Tests](docs/WRITER-SUPPORT.md): keine vollständige LibreOffice-Kompatibilität.
+
+Schulnotizen (0.3): mehrere Handschriftseiten, Stift/Textmarker/Radierer, getippter Text sowie `.pnote`-Sicherung und SVG-Seitenausgabe. Tablet-Ansichten und Grenzen: [docs/NOTES.md](docs/NOTES.md). Physische S-Pen-/Apple-Pencil-Tests und iOS-Auslieferung stehen aus.
