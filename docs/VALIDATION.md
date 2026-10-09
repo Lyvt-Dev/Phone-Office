@@ -1,4 +1,12 @@
-# Validierungsstand 0.3.0
+# Validierungsstand 0.4
+
+46 Unit-Tests bestanden; Notizpräferenzen bleiben gespeichert, ungültige Einstellungswerte werden beim Öffnen abgelehnt. 60 Browser-Szenarien für Desktop, Tablet hoch/quer und Smartphone, einschließlich kompakter Handy-Querformatansicht (844 × 390), 48-Pixel-Werkzeuge, sichtbarer Schreibfläche, Einstellungsdialog/Focus/Escape, Präferenzen nach Neustart sowie Sicherung/Import. Der Release-Workflow prüft den endgültigen Stand erneut.
+
+Der iPhone-/iPad-Simulator-Build der Notizfunktion wurde auf macOS erfolgreich kompiliert. Aktuelle Geräteabnahme der neuen Oberfläche, Apple Pencil und Leistungs-Benchmarks sind offen. Nutzer hat zuvor funktionierenden S Pen zurückgemeldet, ohne Gerätemodell/Versionsangabe. Unter `NOTES.md` stehen Umfang und Grenzen.
+
+## Vorherige Validierung
+
+### Stand 0.3.0
 
 - 45 Unit-Tests bestanden: einschließlich Notizkern, Papier/Seiten, Strichdruck, Radierertreffer, Sicherung und erneutem Import, Datengrenzen und HTML-Bereinigung.
 - 52 Browser-Szenarien: Dokument-/Writer-Rundläufe sowie Schulnotizen auf Desktop, Smartphone, Tablet hoch/quer. Notiztests prüfen Druckeingabe über Chromium, Rückgängig/Wiederholen, Fingerfilter, abgebrochene Striche, Textmarker, Rotation, SVG sowie vollständige `.pnote`-Sicherung mit erneutem Import als unabhängige Kopie. Keine ungefangenen Browserfehler in den Notizszenarien.

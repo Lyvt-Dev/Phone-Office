@@ -58,3 +58,5 @@ Ein Test-Tag (`v*-android-test*`) startet den Workflow für eine signierte Debug
 [Writer-Dateiformate, Grenzen und Tests](docs/WRITER-SUPPORT.md): keine vollständige LibreOffice-Kompatibilität.
 
 Schulnotizen (0.3): mehrere Handschriftseiten, Stift/Textmarker/Radierer, getippter Text sowie `.pnote`-Sicherung und SVG-Seitenausgabe. Tablet-Ansichten und Grenzen: [docs/NOTES.md](docs/NOTES.md). Physische S-Pen-/Apple-Pencil-Tests und iOS-Auslieferung stehen aus.
+
+Ab 0.4: kompakte Querformatansicht, Icon-Werkzeuge, separate Notizeinstellungen und gespeicherte Stiftpräferenzen. Der Sichern-Button gibt direkt das vollständige Notizbuch aus.

@@ -116,3 +116,22 @@ describe("Notizbuch und Handschrift", () => {
     expect(() => importNote("{")).toThrow();
   });
 });
+
+it("speichert Notizeinstellungen und validiert importierte Einstellungswerte", () => {
+  const n = newNotebook();
+  n.preferences = { color: "#2563eb", width: 6, finger: true, zoom: 125 };
+  const doc = { ...createDocument(), notebook: n };
+  localStorageAdapter.save([doc]);
+  expect(localStorageAdapter.load()[0].notebook?.preferences).toEqual(
+    n.preferences,
+  );
+  expect(
+    isNotebook({ ...n, preferences: { ...n.preferences, zoom: 999 } }),
+  ).toBe(false);
+  expect(
+    isNotebook({ ...n, preferences: { ...n.preferences, color: "invalid" } }),
+  ).toBe(false);
+  expect(
+    isNotebook({ ...n, preferences: { ...n.preferences, finger: "yes" } }),
+  ).toBe(false);
+});

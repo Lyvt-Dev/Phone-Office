@@ -27,3 +27,11 @@ Automatisierte Tests prüfen lokalen Speicher, Notizsicherung mit erneutem Impor
 Vor einer Zusage für den Unterricht auf echten Geräten prüfen: langes Schreiben mit aufgelegter Hand, Seitenwechsel, Druck, Radieren, Systemtastatur, Rotation, Offline-Neustart und Export über die Geräteauswahl. iOS-Build und Apple-Pencil-Gerätetest benötigen macOS/Xcode, Signierung und ein kompatibles iPad; in dieser Linux-Umgebung nicht möglich.
 
 Der zusätzliche GitHub-Workflow `ios-simulator.yml` kompiliert die gemeinsame iPhone-/iPad-App auf einem macOS-Runner ohne Gerätesignierung. Sein ZIP ist ausschließlich für den Simulator, keine auf einem iPad installierbare IPA und kein Apple-Pencil-Gerätetest. Kompilierung, Verpackung und Artefakt-Upload erfolgreich geprüft: https://github.com/Lyvt-Dev/Phone-Office/actions/runs/37991115879 .
+
+## Vereinfachte Oberfläche 0.4
+
+Querformat verwendet eine kompakte Titelzeile mit Zurück, Handschrift/Text und Sichern. Eine Icon-Leiste bietet Stift, Textmarker, Radierer, Rückgängig/Wiederholen und das Zahnrad. Die Seitenwahl bleibt direkt erreichbar; die Schreibfläche füllt den verbleibenden Bildschirm. Auch große Tablets verwenden diese Ansicht. Safe-Area-Abstände berücksichtigen Aussparungen und Systemleisten, sofern die WebView sie meldet.
+
+Das Zahnrad öffnet rechts im Querformat bzw. unten auf dem Handy die Notizeinstellungen: Farbpalette/eigene Farbe, Strichstärke, Papier, Zoom, Fingerzeichnen, Fach, Farbschema und zusätzliche Ausgaben. Die Einstellungen für Farbe, Stärke, Zoom und Fingerzeichnen bleiben pro Notizbuch erhalten und werden in `.pnote` mitgesichert. Ältere Notizsicherungen ohne diese Werte verwenden Standardwerte. Die primäre Aktion „Sichern“ gibt unmittelbar das komplette Notizbuch aus; Office-Formate sind als zusätzliche Ausgabe in den Einstellungen erreichbar. SVG und Vorschau stehen ebenfalls dort bereit.
+
+Weitere Pointer-/Druckverarbeitung bleibt unverändert; bereits gezeichnete Konturen werden beim nächsten Strich über React-Memoisierung wiederverwendet. Kein Gerät-Benchmark wird daraus abgeleitet. Nutzer-Rückmeldung vor dem Oberflächenumbau: S Pen funktioniert; Gerätemodell und genaue Testversion wurden nicht erfasst. Die neue Querformatansicht sowie Apple Pencil benötigen weiterhin Geräteabnahme.

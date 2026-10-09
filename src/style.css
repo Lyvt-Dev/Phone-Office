@@ -2209,3 +2209,469 @@ footer button {
     flex-shrink: 0;
   }
 }
+/* Focused school notebook workspace */
+.note-commandbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.note-commandbar .ink-toolbar,
+.note-commandbar .note-pages {
+  gap: 4px;
+  padding: 6px 10px;
+  flex-wrap: nowrap;
+}
+.note-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+.note-icon svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+.note-icon span {
+  display: none;
+}
+.note-commandbar .ink-toolbar button,
+.note-commandbar .note-pages button {
+  padding: 10px;
+}
+.ink-tool-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--line);
+  margin-inline: 4px;
+  flex-shrink: 0;
+}
+.note-commandbar .note-pages select {
+  min-height: 48px;
+  padding: 8px 6px;
+  width: 130px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 10px;
+  font-size: 15px;
+}
+.note-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface);
+}
+.notes-ink .editor-status {
+  display: none;
+}
+.note-back {
+  display: none;
+}
+.notes-active .editor-top > div:first-of-type {
+  min-width: 0;
+  flex: 1;
+}
+.notes-active .note-mode {
+  padding: 0;
+  gap: 4px;
+  border: 0;
+}
+.notes-active .note-mode button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 12px;
+}
+.notes-active .note-mode svg {
+  width: 22px;
+  height: 22px;
+}
+.note-settings-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  background: #10221b66;
+}
+.note-settings-panel {
+  width: min(380px, 100vw);
+  height: 100dvh;
+  background: var(--surface);
+  color: var(--text);
+  overflow: auto;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+  box-shadow: -8px 0 40px #0002;
+}
+.note-settings-panel header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+.note-settings-panel h2 {
+  font-size: 23px;
+  margin: 0 0 8px;
+}
+.note-settings-panel header p,
+.note-settings-panel fieldset p {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+  color: var(--text);
+}
+.note-settings-panel fieldset {
+  border: 0;
+  border-top: 1px solid var(--line);
+  padding: 16px 0;
+  margin: 20px 0 0;
+  min-width: 0;
+}
+.note-settings-panel legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 600;
+  padding-right: 12px;
+}
+.note-settings-panel legend svg,
+.note-settings-panel label svg,
+.note-setting-action svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.note-settings-panel label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 52px;
+  margin-top: 8px;
+  font-size: 15px;
+}
+.note-settings-panel input:not([type="checkbox"]),
+.note-settings-panel select {
+  min-height: 48px;
+  min-width: 0;
+  width: 170px;
+  padding: 8px;
+  font-size: 16px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.note-settings-panel input[type="color"] {
+  width: 70px;
+}
+.note-settings-panel input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  accent-color: var(--green);
+}
+.note-settings-panel .ink-swatches {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+.ink-swatches button {
+  height: 48px;
+  width: 48px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--bg);
+}
+.ink-swatches button span {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--swatch);
+}
+.ink-swatches button[aria-pressed="true"] {
+  border-color: var(--green);
+}
+.note-setting-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  width: 100%;
+  text-align: left;
+  padding: 10px;
+  background: var(--bg);
+  border-radius: 10px;
+  margin-top: 10px;
+  font-size: 15px;
+}
+.note-settings-done {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+  margin-top: 20px;
+  font-size: 16px;
+}
+@media (min-width: 1100px) {
+  .ink-toolbar .note-icon {
+    width: auto;
+  }
+  .ink-toolbar .note-icon span {
+    display: inline;
+  }
+}
+@media (max-width: 600px) {
+  .note-commandbar {
+    justify-content: center;
+  }
+  .note-commandbar .ink-toolbar {
+    overflow: visible;
+    padding: 6px;
+  }
+  .note-commandbar .note-pages {
+    padding-top: 0;
+  }
+  .notes-active .editor-top {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .notes-active .editor-top > div:first-of-type {
+    flex-basis: 100%;
+  }
+  .notes-active .editor-actions {
+    margin-left: auto;
+  }
+  .notes-active .editor-actions .secondary {
+    display: none;
+  }
+  .notes-active .note-mode button span {
+    font-size: 14px;
+  }
+  .note-settings-backdrop {
+    align-items: flex-end;
+  }
+  .note-settings-panel {
+    width: 100%;
+    height: auto;
+    max-height: 90dvh;
+    border-radius: 20px 20px 0 0;
+  }
+}
+@media (orientation: landscape) {
+  .notes-active {
+    height: 100dvh;
+    overflow: hidden;
+  }
+  .notes-active main {
+    width: 100%;
+    margin-left: 0;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .notes-active .sidebar:not(.mobile-open),
+  .notes-active .topbar {
+    display: none;
+  }
+  .notes-active .editor-layout {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .notes-active .editor-top {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding: 6px 12px;
+    min-height: 60px;
+  }
+  .notes-active .editor-top > div:first-of-type {
+    flex: 1;
+    min-width: 0;
+  }
+  .notes-active .document-title {
+    font-size: 20px;
+    width: 100%;
+    max-width: 100%;
+  }
+  .notes-active .save-meta,
+  .notes-active .editor-actions .secondary {
+    display: none;
+  }
+  .notes-active .note-back {
+    display: inline-flex;
+  }
+  .notes-active .note-mode button {
+    padding: 8px;
+  }
+  .notes-active .note-mode button span {
+    display: none;
+  }
+  .notes-active .editor-actions {
+    width: auto;
+    margin: 0;
+    flex: 0 0 auto;
+  }
+  .notes-active .editor-actions .primary {
+    min-height: 48px;
+    padding: 10px 14px;
+  }
+  .notes-active .notebook-editor {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .notes-active .note-commandbar {
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+  }
+  .notes-active .ink-toolbar {
+    overflow: auto;
+    min-width: 0;
+  }
+  .notes-active .ink-toolbar .note-icon {
+    width: 48px;
+  }
+  .notes-active .ink-toolbar .note-icon span {
+    display: none;
+  }
+  .notes-active .ink-scroll {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    padding: 8px 16px;
+  }
+  .notes-active .note-status {
+    flex-shrink: 0;
+    padding: 4px 12px;
+    min-height: 24px;
+    font-size: 12px;
+  }
+  .notes-active .note-pages {
+    flex-shrink: 0;
+    padding: 6px 10px;
+  }
+  .notes-active .note-pages select {
+    width: 115px;
+  }
+  .note-settings-backdrop {
+    align-items: stretch;
+  }
+  .note-settings-panel {
+    width: min(360px, 75vw);
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+}
+@media (orientation: landscape) and (max-height: 450px) {
+  .notes-active .editor-top {
+    min-height: 54px;
+    padding: 3px 8px;
+  }
+  .notes-active .note-commandbar .ink-toolbar,
+  .notes-active .note-commandbar .note-pages {
+    padding: 3px 6px;
+  }
+  .notes-active .note-pages select {
+    width: 108px;
+  }
+}
+@media print {
+  .note-commandbar,
+  .note-status,
+  .note-settings-backdrop,
+  .note-back {
+    display: none;
+  }
+  .notes-active,
+  .notes-active main {
+    height: auto;
+    overflow: visible;
+  }
+}
+@media (orientation: landscape) {
+  .notes-active .writing-space {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+}
+.note-settings-backdrop {
+  z-index: 200;
+}
+.note-settings-panel .ink-swatches {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.ink-swatches button {
+  flex-shrink: 0;
+  min-width: 48px;
+}
+.note-icon {
+  position: relative;
+}
+.ink-color-dot {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid white;
+}
+
+@media (orientation: landscape) {
+  .notes-active main {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+      env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+}
+.note-build-version {
+  font-size: 13px;
+  color: var(--text);
+  margin: 20px 0 0;
+}
+@media (max-width: 350px) {
+  .note-commandbar .ink-toolbar {
+    gap: 2px;
+    padding: 6px;
+  }
+  .ink-tool-divider {
+    display: none;
+  }
+  .notes-active .note-mode button {
+    min-width: 48px;
+  }
+  .notes-active .note-mode button span {
+    display: none;
+  }
+}

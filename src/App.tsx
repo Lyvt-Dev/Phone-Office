@@ -49,6 +49,8 @@ import {
   Check,
   Settings2,
   Menu,
+  PenLine,
+  Type,
 } from "lucide-react";
 import {
   createDocument,
@@ -442,7 +444,15 @@ export default function App() {
     </button>
   );
   return (
-    <div className={"app " + (active ? "editing" : "")}>
+    <div
+      className={
+        "app " +
+        (active ? "editing " : "") +
+        (doc?.notebook
+          ? "notes-active " + (noteMode === "ink" ? "notes-ink" : "")
+          : "")
+      }
+    >
       <input
         ref={fileInput}
         type="file"
@@ -758,6 +768,15 @@ export default function App() {
         ) : (
           <div className="editor-layout">
             <div className="editor-top">
+              {doc?.notebook && (
+                <button
+                  className="note-back note-icon"
+                  aria-label="Zur Dokumentübersicht"
+                  onClick={() => setActive(null)}
+                >
+                  <ArrowLeft aria-hidden="true" />
+                </button>
+              )}
               <div>
                 <input
                   className="document-title"
@@ -783,6 +802,32 @@ export default function App() {
                   {saveStatus} · Quelle: {doc?.format}
                 </div>
               </div>
+              {doc?.notebook && (
+                <div
+                  className="note-mode"
+                  role="tablist"
+                  aria-label="Notizmodus"
+                >
+                  <button
+                    role="tab"
+                    aria-label="Handschrift"
+                    aria-selected={noteMode === "ink"}
+                    onClick={() => setNoteMode("ink")}
+                  >
+                    <PenLine aria-hidden="true" />
+                    <span>Handschrift</span>
+                  </button>
+                  <button
+                    role="tab"
+                    aria-label="Text"
+                    aria-selected={noteMode === "text"}
+                    onClick={() => setNoteMode("text")}
+                  >
+                    <Type aria-hidden="true" />
+                    <span>Text</span>
+                  </button>
+                </div>
+              )}
               <div className="editor-actions">
                 <button
                   className="secondary"
@@ -794,36 +839,28 @@ export default function App() {
                 </button>
                 <button
                   className="primary"
-                  aria-label="Exportieren"
-                  onClick={() => setModal("export")}
+                  aria-label={
+                    doc?.notebook ? "Notizbuch sichern" : "Exportieren"
+                  }
+                  disabled={busy}
+                  onClick={() =>
+                    doc?.notebook ? void noteExport() : setModal("export")
+                  }
                 >
                   <Download size={17} />
-                  <span>Exportieren</span>
+                  <span>{doc?.notebook ? "Sichern" : "Exportieren"}</span>
                 </button>
               </div>
             </div>
-            {doc?.notebook && (
-              <div className="note-mode" role="tablist" aria-label="Notizmodus">
-                <button
-                  role="tab"
-                  aria-selected={noteMode === "ink"}
-                  onClick={() => setNoteMode("ink")}
-                >
-                  Handschrift
-                </button>
-                <button
-                  role="tab"
-                  aria-selected={noteMode === "text"}
-                  onClick={() => setNoteMode("text")}
-                >
-                  Text
-                </button>
-              </div>
-            )}
             {doc?.notebook && noteMode === "ink" ? (
               <NotebookEditor
                 key={doc.id}
                 notebook={doc.notebook}
+                saveStatus={saveStatus}
+                dark={dark}
+                onTheme={() => setDark(!dark)}
+                onPreview={() => setModal("preview")}
+                onMoreExports={() => setModal("export")}
                 onNotice={setNotice}
                 onExportPage={(p) => void noteExport(p)}
                 onChange={(notebook) =>

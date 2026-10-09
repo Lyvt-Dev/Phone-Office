@@ -18,10 +18,23 @@ export interface NotePage {
   paper: Paper;
   strokes: InkStroke[];
 }
+export interface NotePreferences {
+  color: string;
+  width: number;
+  finger: boolean;
+  zoom: number;
+}
+export const defaultNotePreferences: NotePreferences = {
+  color: "#26322f",
+  width: 3,
+  finger: false,
+  zoom: 100,
+};
 export interface Notebook {
   version: 1;
   subject: string;
   pages: NotePage[];
+  preferences?: NotePreferences;
 }
 export const newPage = (): NotePage => ({
   id: crypto.randomUUID(),
@@ -39,6 +52,12 @@ export function isNotebook(value: unknown): value is Notebook {
   return (
     !!n &&
     n.version === 1 &&
+    (n.preferences === undefined ||
+      (!!n.preferences &&
+        /^#[0-9a-f]{6}$/i.test(n.preferences.color) &&
+        [2, 3, 6].includes(n.preferences.width) &&
+        typeof n.preferences.finger === "boolean" &&
+        [80, 100, 125, 150].includes(n.preferences.zoom))) &&
     typeof n.subject === "string" &&
     n.subject.length <= 200 &&
     Array.isArray(n.pages) &&

@@ -1,6 +1,20 @@
-import { useRef, useState, type PointerEvent } from "react";
+import { memo, useRef, useState, type PointerEvent } from "react";
+import {
+  PenLine,
+  Highlighter,
+  Eraser,
+  Undo2,
+  Redo2,
+  Settings,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { NoteSettings } from "./NoteSettings";
 import {
   newPage,
+  defaultNotePreferences,
+  type NotePreferences,
   inkPoint,
   strokePath,
   touchesStroke,
@@ -16,19 +30,30 @@ interface Props {
   onChange: (n: Notebook) => void;
   onExportPage: (p: NotePage) => void;
   onNotice: (s: string) => void;
+  saveStatus: string;
+  dark: boolean;
+  onTheme: () => void;
+  onPreview: () => void;
+  onMoreExports: () => void;
 }
 export function NotebookEditor({
   notebook,
   onChange,
   onExportPage,
   onNotice,
+  saveStatus,
+  dark,
+  onTheme,
+  onPreview,
+  onMoreExports,
 }: Props) {
   const [index, setIndex] = useState(0),
     [tool, setTool] = useState<"pen" | "marker" | "eraser">("pen");
-  const [color, setColor] = useState("#26322f"),
-    [width, setWidth] = useState(3),
-    [finger, setFinger] = useState(false),
-    [zoom, setZoom] = useState(100);
+  const prefs = notebook.preferences || defaultNotePreferences;
+  const { color, width, finger, zoom } = prefs;
+  const [settings, setSettings] = useState(false);
+  const updatePreferences = (change: Partial<NotePreferences>) =>
+    onChange({ ...notebook, preferences: { ...prefs, ...change } });
   const [erasedPage, setErasedPage] = useState<NotePage | null>(null);
   const [draft, setDraft] = useState<InkStroke | null>(null);
   const [past, setPast] = useState<NotePage[]>([]),
@@ -99,7 +124,7 @@ export function NotebookEditor({
       : {
           id: crypto.randomUUID(),
           color,
-          width: tool === "marker" ? Math.max(12, width) : width,
+          width: tool === "marker" ? width * 4 : width,
           tool: tool === "marker" ? "marker" : "pen",
           points: [position(e)],
         };
@@ -191,126 +216,137 @@ export function NotebookEditor({
   }
   return (
     <section className="notebook-editor" aria-label="Handschrift-Notizbuch">
-      <div className="ink-toolbar" role="toolbar" aria-label="Schreibwerkzeuge">
-        {(["pen", "marker", "eraser"] as const).map((t, i) => (
-          <button key={t} aria-pressed={tool === t} onClick={() => setTool(t)}>
-            {["Stift", "Textmarker", "Radierer"][i]}
-          </button>
-        ))}
-        <label>
-          Farbe
-          <input
-            aria-label="Stiftfarbe"
-            type="color"
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-          />
-        </label>
-        <label>
-          Strich
-          <select
-            aria-label="Strichstärke"
-            value={width}
-            onChange={(e) => setWidth(+e.target.value)}
-          >
-            <option value={2}>Fein</option>
-            <option value={3}>Normal</option>
-            <option value={6}>Dick</option>
-          </select>
-        </label>
-        <button disabled={!past.length} onClick={() => history(true)}>
-          Strich rückgängig
-        </button>
-        <button disabled={!future.length} onClick={() => history(false)}>
-          Strich wiederholen
-        </button>
-      </div>
-      <details className="note-options">
-        <summary>Fach, Papier und Eingabe</summary>
-        <div className="note-settings">
-          <label>
-            Fach
-            <input
-              aria-label="Schulfach"
-              placeholder="Fach eintragen"
-              maxLength={200}
-              value={notebook.subject}
-              onChange={(e) =>
-                onChange({ ...notebook, subject: e.target.value })
-              }
-            />
-          </label>
-          <label>
-            Papier
-            <select
-              aria-label="Notizpapier"
-              value={page.paper}
-              onChange={(e) =>
-                commit({ ...page, paper: e.target.value as Paper })
-              }
-            >
-              <option value="grid">Kariert</option>
-              <option value="ruled">Liniert</option>
-              <option value="plain">Leer</option>
-            </select>
-          </label>
-          <label className="finger-toggle">
-            <input
-              type="checkbox"
-              checked={finger}
-              onChange={(e) => setFinger(e.target.checked)}
-            />
-            Mit Finger zeichnen
-          </label>
-          <label>
-            Zoom
-            <select
-              aria-label="Notizzoom"
-              value={zoom}
-              onChange={(e) => setZoom(+e.target.value)}
-            >
-              {[80, 100, 125, 150].map((n) => (
-                <option key={n} value={n}>
-                  {n}%
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </details>
-      <p className="ink-hint">
-        Mit Stift schreiben; Finger verschiebt die Seite. Radierer entfernt
-        ganze Striche. Keine Handschrifterkennung.
-      </p>
-      <div className="note-pages" aria-label="Notizseiten">
-        {notebook.pages.map((p, i) => (
+      <div className="note-commandbar">
+        <div
+          className="ink-toolbar"
+          role="toolbar"
+          aria-label="Schreibwerkzeuge"
+        >
+          {(["pen", "marker", "eraser"] as const).map((t, i) => {
+            const Icon = [PenLine, Highlighter, Eraser][i];
+            const label = ["Stift", "Textmarker", "Radierer"][i];
+            return (
+              <button
+                key={t}
+                className="note-icon"
+                aria-label={label}
+                title={label}
+                aria-pressed={tool === t}
+                onClick={() => setTool(t)}
+              >
+                <Icon aria-hidden="true" />
+                {t !== "eraser" && (
+                  <i
+                    className="ink-color-dot"
+                    aria-hidden="true"
+                    style={{ background: color }}
+                  />
+                )}
+                <span>{label}</span>
+              </button>
+            );
+          })}
+          <span className="ink-tool-divider" />
           <button
-            key={p.id}
-            aria-pressed={i === index}
+            className="note-icon"
+            aria-label="Strich rückgängig"
+            title="Rückgängig"
+            disabled={!past.length}
+            onClick={() => history(true)}
+          >
+            <Undo2 aria-hidden="true" />
+          </button>
+          <button
+            className="note-icon"
+            aria-label="Strich wiederholen"
+            title="Wiederholen"
+            disabled={!future.length}
+            onClick={() => history(false)}
+          >
+            <Redo2 aria-hidden="true" />
+          </button>
+          <button
+            className="note-icon ink-settings-trigger"
+            aria-label="Notizeinstellungen"
+            title="Notizeinstellungen"
+            onClick={() => setSettings(true)}
+          >
+            <Settings aria-hidden="true" />
+            <span>Einstellungen</span>
+          </button>
+        </div>
+        <div className="note-pages" aria-label="Notizseiten">
+          <button
+            className="note-icon"
+            aria-label="Vorherige Notizseite"
+            disabled={index === 0}
             onClick={() => {
-              setIndex(i);
+              setIndex(index - 1);
               setPast([]);
               setFuture([]);
             }}
           >
-            Seite {i + 1}
+            <ChevronLeft aria-hidden="true" />
           </button>
-        ))}
-        <button
-          disabled={notebook.pages.length >= 50}
-          onClick={() => {
-            onChange({ ...notebook, pages: [...notebook.pages, newPage()] });
-            setIndex(notebook.pages.length);
-            setPast([]);
-            setFuture([]);
-          }}
-        >
-          Seite hinzufügen
-        </button>
-        <button onClick={() => onExportPage(page)}>
-          Seite als SVG exportieren
-        </button>
+          <select
+            aria-label="Notizseite"
+            value={index}
+            onChange={(e) => {
+              setIndex(+e.target.value);
+              setPast([]);
+              setFuture([]);
+            }}
+          >
+            {notebook.pages.map((p, i) => (
+              <option key={p.id} value={i}>
+                Seite {i + 1} / {notebook.pages.length}
+              </option>
+            ))}
+          </select>
+          <button
+            className="note-icon"
+            aria-label="Nächste Notizseite"
+            disabled={index === notebook.pages.length - 1}
+            onClick={() => {
+              setIndex(index + 1);
+              setPast([]);
+              setFuture([]);
+            }}
+          >
+            <ChevronRight aria-hidden="true" />
+          </button>
+          <button
+            className="note-icon"
+            aria-label="Seite hinzufügen"
+            title="Seite hinzufügen"
+            disabled={notebook.pages.length >= 50}
+            onClick={() => {
+              onChange({ ...notebook, pages: [...notebook.pages, newPage()] });
+              setIndex(notebook.pages.length);
+              setPast([]);
+              setFuture([]);
+            }}
+          >
+            <Plus aria-hidden="true" />
+          </button>
+        </div>
       </div>
+      {settings && (
+        <NoteSettings
+          notebook={notebook}
+          page={page}
+          preferences={prefs}
+          dark={dark}
+          onPreferences={updatePreferences}
+          onSubject={(subject) => onChange({ ...notebook, subject })}
+          onPaper={(paper) => commit({ ...page, paper })}
+          onClose={() => setSettings(false)}
+          onExportPage={() => onExportPage(page)}
+          onPreview={onPreview}
+          onMoreExports={onMoreExports}
+          onTheme={onTheme}
+        />
+      )}
       <div className="ink-scroll" ref={scroller}>
         <svg
           className="ink-sheet"
@@ -352,20 +388,25 @@ export function NotebookEditor({
             ...(erasedPage?.strokes || page.strokes),
             ...(draft ? [draft] : []),
           ].map((s) => (
-            <path
-              key={s.id}
-              data-ink-stroke={s.id}
-              d={strokePath(s)}
-              fill={s.color}
-              opacity={s.tool === "marker" ? 0.3 : 1}
-            />
+            <InkPath key={s.id} stroke={s} />
           ))}
         </svg>
       </div>
-      <p className="ink-hint">
-        {page.strokes.length} Striche · Seite {index + 1} von{" "}
-        {notebook.pages.length}. Getippten Text findest du unter „Text“.
-      </p>
+      <div className="note-status">
+        <span>
+          {notebook.subject || "Notizbuch"} · Seite {index + 1} /{" "}
+          {notebook.pages.length} · {page.strokes.length} Striche
+        </span>
+        <span>{saveStatus}</span>
+      </div>
     </section>
   );
 }
+const InkPath = memo(({ stroke: s }: { stroke: InkStroke }) => (
+  <path
+    data-ink-stroke={s.id}
+    d={strokePath(s)}
+    fill={s.color}
+    opacity={s.tool === "marker" ? 0.3 : 1}
+  />
+));

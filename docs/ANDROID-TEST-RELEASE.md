@@ -1,3 +1,9 @@
+# Android-Test 0.4: einfachere Schulnotizen
+
+Kompaktes Querformat mit großer Schreibfläche, Icon-Werkzeugen und separatem Zahnrad-Menü. Farbe, Stärke, Zoom und Fingerzeichnen bleiben pro Notizbuch gespeichert. „Sichern“ exportiert sofort das vollständige `.pnote`-Notizbuch. Seitenwahl direkt in der Leiste; Papier/Fach, Vorschau, SVG und weitere Exportformate in den Notizeinstellungen. Smartphone-/Tablet-Browserprüfungen enthalten die neue Ansicht; echte Geräteabnahme der veränderten Oberfläche ist noch offen.
+
+Die Signierung verwendet und prüft die wiederverwendete Schlüsseldatei aus dem Build-Cache. Gegenüber älteren Testversionen vor 0.3.1 kann eine Neuinstallation erforderlich sein: vor Deinstallation unbedingt eigene Dokumente exportieren.
+
 # Phone Office – Android-Test
 
 Diese APK ist ein **mit einem Android-Debug-Schlüssel signierter Testbuild**, keine Store-Veröffentlichung. Eine kostenpflichtige Entwicklerlizenz ist für die Installation einer solchen APK nicht erforderlich.
