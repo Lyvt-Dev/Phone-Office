@@ -62,3 +62,5 @@ Schulnotizen (0.3): mehrere Handschriftseiten, Stift/Textmarker/Radierer, getipp
 Ab 0.4: kompakte Querformatansicht, Icon-Werkzeuge, separate Notizeinstellungen und gespeicherte Stiftpräferenzen. Der Sichern-Button gibt direkt das vollständige Notizbuch aus.
 
 0.5 ergänzt Zwei-Finger-Zoom, eine Tablet-Seitenübersicht mit Lesezeichen, Handschrift-Auswahl, PDF-Arbeitsblätter und PDF-Ausgabe sowie einen Assistenten für mehrere Samsung-Notes-PDF-Exporte. Speicherung erfolgt atomar in IndexedDB; vorhandene lokale Daten werden übernommen. Eigenes Logo und tatsächliche Versionsanzeige. [Release 0.5](docs/RELEASE-0.5.0.md), [Schulnotizen](docs/NOTES.md), [iPad-Bereitstellung](docs/IPAD.md). Die Browser-App ist für Safari/Home-Bildschirm mit Offline-Shell vorbereitet; eine native IPA benötigt Apple-Signierung. GoodNotes-Parität ist nicht vollständig implementiert.
+
+Die iPad-Auslieferung ist für 0.5 zunächst zurückgestellt; der Pages-Workflow ist manuell startbar, sobald GitHub Pages konfiguriert wurde. Android bleibt der Release-Schwerpunkt.

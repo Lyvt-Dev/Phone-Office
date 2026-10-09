@@ -1,6 +1,6 @@
 # Phone Office 0.5.0
 
-Erster regulärer Projekt-Release mit einer erweiterten Schulnotizen-App. Android wird weiterhin als **signierte Test-APK** ausgeliefert, nicht über den Play Store. Die iPad-Ausgabe ist eine **Browser-App**, keine signierte IPA. Der GoodNotes-Funktionsumfang ist noch nicht vollständig umgesetzt.
+Erster regulärer Projekt-Release mit einer erweiterten Schulnotizen-App. Android wird weiterhin als **signierte Test-APK** ausgeliefert, nicht über den Play Store. Die iPad-Auslieferung wurde auf Nutzerwunsch zurückgestellt; es gibt keine signierte IPA. Die vorbereitete Web-Ausgabe liegt separat bei. Der GoodNotes-Funktionsumfang ist noch nicht vollständig umgesetzt.
 
 ## Neu
 
@@ -18,7 +18,7 @@ Erster regulärer Projekt-Release mit einer erweiterten Schulnotizen-App. Androi
 
 **Android:** `phone-office-android-test.apk`. Version 0.5.0-test, Paket `dev.lyvt.phoneoffice.debug`. Der Workflow verwendet den bisherigen Test-Schlüssel und veröffentlicht Zertifikat und Prüfsummen. Bei gleichem Zertifikat ist ein Update über 0.3.1/0.4.0 möglich; vor notwendigen Neuinstallationen alle eigenen Dokumente sichern. Die APK braucht keine kostenpflichtige Entwicklerlizenz. Sie ist weiterhin ein Gerätetest, kein Nachweis für Store-Zulassung.
 
-**iPad:** Nach erfolgreicher Pages-Bereitstellung https://lyvt-dev.github.io/Phone-Office/ in Safari öffnen und über Teilen → Zum Home-Bildschirm hinzufügen. Erstinstallation benötigt Internet; nach abgeschlossener Offline-Vorbereitung funktioniert die lokale App offline. `phone-office-web-ipad.zip` ist die Web-Ausgabe für statisches HTTPS-Hosting, keine installierbare IPA. Falls Pages im Repository noch nicht aktiviert ist, siehe `docs/IPAD.md`.
+**Web-Ausgabe:** `phone-office-web-ipad.zip` für statisches HTTPS-Hosting, keine installierbare IPA. Die iPad-Veröffentlichung ist zunächst zurückgestellt. WebKit-Funktionstests haben bestanden, aber GitHub Pages konnte mit dem Workflow-Token nicht aktiviert werden. Bei einer späteren Freigabe siehe `docs/IPAD.md`.
 
 Eine native iPad-Installation erfordert Apple-Signierung. Kostenlos auf dem eigenen Gerät mit Mac/Xcode und Apple-ID (üblicherweise sieben Tage); TestFlight benötigt das kostenpflichtige Developer-Programm. Der Simulator-Build ist nicht auf einem physischen iPad installierbar.
 

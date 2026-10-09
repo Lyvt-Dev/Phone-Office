@@ -1,5 +1,7 @@
 # Phone Office auf dem iPad
 
+Die Auslieferung ist für 0.5 auf Nutzerwunsch zurückgestellt. Die folgenden Schritte sind für später vorbereitet. WebKit-Funktionstests wurden erfolgreich auf GitHub geprüft; die automatische Pages-Aktivierung scheiterte an fehlenden Token-Rechten. Der Web-Workflow startet deshalb vorerst nur manuell.
+
 ## Ohne Developer-Konto: Browser-App
 
 Nach erfolgreicher GitHub-Pages-Bereitstellung: https://lyvt-dev.github.io/Phone-Office/ in Safari öffnen. Teilen → Zum Home-Bildschirm hinzufügen. Das Logo wird als Startbildschirm-Icon verwendet. App einmal vollständig online laden, bevor sie offline benötigt wird. Alle Dokumente bleiben in der lokalen IndexedDB dieses App-Ursprungs; weder Notizinhalte noch importierte PDFs werden hochgeladen. Browser/App-Datenlöschung, Speicherbereinigung und Deinstallation können Dokumente entfernen. `.pnote` regelmäßig über die Dateiausgabe sichern.
