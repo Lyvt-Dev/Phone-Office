@@ -26,4 +26,4 @@ Automatisierte Tests prüfen lokalen Speicher, Notizsicherung mit erneutem Impor
 
 Vor einer Zusage für den Unterricht auf echten Geräten prüfen: langes Schreiben mit aufgelegter Hand, Seitenwechsel, Druck, Radieren, Systemtastatur, Rotation, Offline-Neustart und Export über die Geräteauswahl. iOS-Build und Apple-Pencil-Gerätetest benötigen macOS/Xcode, Signierung und ein kompatibles iPad; in dieser Linux-Umgebung nicht möglich.
 
-Der zusätzliche GitHub-Workflow `ios-simulator.yml` kompiliert die gemeinsame iPhone-/iPad-App auf einem macOS-Runner ohne Gerätesignierung. Sein ZIP ist ausschließlich für den Simulator, keine auf einem iPad installierbare IPA und kein Apple-Pencil-Gerätetest. Der Erfolg wird nach dem Workflowlauf geprüft.
+Der zusätzliche GitHub-Workflow `ios-simulator.yml` kompiliert die gemeinsame iPhone-/iPad-App auf einem macOS-Runner ohne Gerätesignierung. Sein ZIP ist ausschließlich für den Simulator, keine auf einem iPad installierbare IPA und kein Apple-Pencil-Gerätetest. Kompilierung, Verpackung und Artefakt-Upload erfolgreich geprüft: https://github.com/Lyvt-Dev/Phone-Office/actions/runs/37991115879 .
