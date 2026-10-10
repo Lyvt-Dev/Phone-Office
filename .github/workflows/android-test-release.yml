@@ -150,7 +150,7 @@ jobs:
       - name: Validate iPad editor with WebKit
         run: |
           npx playwright install webkit
-          npx playwright test --config playwright.webkit.config.ts
+          npx playwright test --config playwright.webkit.config.ts --reporter=list,github
       - name: Compile actual arm64 iPhone and iPad app
         run: |
           xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath "$RUNNER_TEMP/phone-office-ipad" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
