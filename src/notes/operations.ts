@@ -207,3 +207,30 @@ export function eraseStrokePart(
   if (!changed) return [s];
   return fragments.map((points) => ({ ...s, id: crypto.randomUUID(), points }));
 }
+
+export function shapePoints(
+  kind: "rectangle" | "ellipse",
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+): InkStroke["points"] {
+  const point = (x: number, y: number) => ({ x, y, pressure: 0.5 });
+  if (kind === "rectangle")
+    return [
+      point(a.x, a.y),
+      point(b.x, a.y),
+      point(b.x, b.y),
+      point(a.x, b.y),
+      point(a.x, a.y),
+    ];
+  const cx = (a.x + b.x) / 2,
+    cy = (a.y + b.y) / 2,
+    rx = Math.abs(b.x - a.x) / 2,
+    ry = Math.abs(b.y - a.y) / 2;
+  const points = Array.from({ length: 64 }, (_, i) =>
+    point(
+      cx + rx * Math.cos((i * Math.PI) / 32),
+      cy + ry * Math.sin((i * Math.PI) / 32),
+    ),
+  );
+  return [...points, { ...points[0] }];
+}

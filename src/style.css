@@ -3509,3 +3509,470 @@ footer button {
     font-size: 12px;
   }
 }
+
+/* 0.7.5: notebooks lead; Office is a secondary workspace. */
+.notes-library .intro {
+  min-height: 0;
+  margin-bottom: 24px;
+}
+.library-eyebrow {
+  display: block;
+  color: var(--green);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.notes-library h1 {
+  font-size: 32px;
+  letter-spacing: -0.04em;
+}
+.notes-library .intro p {
+  color: var(--muted);
+  font-size: 15px;
+}
+.notes-start-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.notes-start-actions button {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 14px;
+}
+.notes-start-actions .new-note-action {
+  font-size: 16px;
+}
+.library-migrate {
+  border: 0;
+  background: transparent;
+  color: var(--green);
+  font-size: 13px;
+}
+.notes-library .library-tabs {
+  margin-top: 28px;
+}
+.notes-library .library-tabs button {
+  gap: 8px;
+}
+.subject-shelf {
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+  margin: -4px 0 22px;
+  padding-bottom: 4px;
+}
+.subject-shelf button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 8px 14px;
+}
+.subject-shelf button[aria-pressed="true"] {
+  background: var(--soft);
+  border-color: var(--green);
+  color: var(--green);
+}
+.notes-library .section-head {
+  align-items: center;
+  gap: 16px;
+}
+.notes-library .section-head h2 {
+  font-size: 15px;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.notes-library .document-controls {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.notes-library .search {
+  min-width: 220px;
+}
+.library-sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.library-sort select {
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0 10px;
+  background: var(--surface);
+  color: var(--text);
+  max-width: 180px;
+}
+.notes-library .document-grid:not(.list) {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 20px;
+}
+.notes-library .document-card {
+  overflow: visible;
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.notes-library .document-preview {
+  height: 230px;
+  background: transparent;
+  padding: 18px 28px 12px;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+}
+.notes-library .notebook-cover {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--cover);
+  border-radius: 4px 12px 12px 4px;
+  color: white;
+  padding: 24px 14px 12px 24px;
+  box-shadow: 5px 5px 0 var(--soft);
+  inset: auto;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  overflow: hidden;
+}
+.cover-spine {
+  position: absolute;
+  top: 0;
+  left: 8px;
+  height: 100%;
+  width: 2px;
+  background: #ffffff35;
+}
+.cover-emblem {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 14px;
+  opacity: 0.8;
+}
+.notes-library .notebook-cover strong {
+  font-size: 17px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  max-height: 66px;
+  overflow: hidden;
+}
+.notes-library .notebook-cover small {
+  color: #ffffffc9;
+  font-size: 12px;
+  margin-top: 7px;
+}
+.cover-page-thumb {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  width: 34px;
+  height: 46px;
+  opacity: 0.8;
+  background: white;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.cover-page-thumb svg {
+  width: 100%;
+  height: 100%;
+}
+.notes-library .format-tag {
+  font-size: 9px;
+  bottom: 8px;
+  right: 12px;
+}
+.library-favorite {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  background: var(--surface);
+  color: var(--muted);
+  border-radius: 50%;
+}
+.library-favorite[aria-pressed="true"] {
+  color: #b77914;
+}
+.notes-library .card-menu {
+  top: 8px;
+  right: 8px;
+  bottom: auto;
+  width: 44px;
+  height: 44px;
+  background: var(--surface);
+  border-radius: 50%;
+  z-index: 1;
+}
+.notes-library .document-details {
+  padding: 16px 18px;
+}
+.notes-library .document-details strong {
+  font-size: 15px;
+}
+.notes-library .document-grid.list .document-preview {
+  width: 92px;
+  height: 106px;
+  min-width: 92px;
+  padding: 8px;
+}
+.notes-library .document-grid.list .notebook-cover {
+  padding: 16px 8px 8px 15px;
+  border-radius: 3px 7px 7px 3px;
+}
+.notes-library .document-grid.list .cover-emblem {
+  width: 17px;
+  height: 17px;
+  margin-bottom: 5px;
+}
+.notes-library .document-grid.list .notebook-cover strong {
+  font-size: 10px;
+  max-height: 30px;
+}
+.notes-library .document-grid.list .notebook-cover small,
+.notes-library .document-grid.list .cover-page-thumb,
+.notes-library .document-grid.list .format-tag {
+  display: none;
+}
+.notes-library .document-grid.list .document-details {
+  padding-right: 100px;
+}
+.notes-library .document-grid.list .library-favorite {
+  left: auto;
+  right: 52px;
+  top: calc(50% - 22px);
+}
+.notes-library .document-grid.list .card-menu {
+  top: calc(50% - 22px);
+}
+.office-addon {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-top: 1px solid var(--line);
+  padding: 22px 0 4px;
+  margin-top: 30px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+.office-addon strong {
+  font-size: 13px;
+  color: var(--text);
+}
+.office-addon p {
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+.office-addon .text-button {
+  min-height: 44px;
+  margin-left: auto;
+}
+.office-addon .text-button + .text-button {
+  margin-left: 0;
+}
+.notebook-details > label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 20px 0;
+  font-size: 14px;
+}
+.notebook-details > label input:not([type="checkbox"]),
+.notebook-details > label select {
+  min-height: 48px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+}
+.notebook-details .note-toggle {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.cover-swatches {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cover-swatches button {
+  width: 44px;
+  height: 44px;
+  border: 3px solid transparent;
+  border-radius: 10px;
+}
+.cover-swatches button[aria-pressed="true"] {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+.notebook-details .danger {
+  color: #b91c1c;
+}
+.page-search {
+  display: block;
+  font-size: 13px;
+  margin: 12px 0 20px;
+}
+.page-search input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+.notes-active:not(.notes-ink) .paper {
+  border-radius: 16px;
+  box-shadow: none;
+  border: 1px solid var(--line);
+}
+@media (max-width: 700px) {
+  .notes-library h1 {
+    font-size: 27px;
+  }
+  .notes-library .intro {
+    margin-bottom: 18px;
+  }
+  .library-eyebrow {
+    font-size: 10px;
+  }
+  .notes-library .intro p {
+    font-size: 13px;
+  }
+  .notes-start-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .notes-start-actions button {
+    justify-content: center;
+    width: 100%;
+  }
+  .notes-start-actions .library-migrate {
+    min-height: 44px;
+    padding: 8px;
+    font-size: 12px;
+  }
+  .notes-library .library-tabs {
+    margin: 20px 0 16px;
+  }
+  .notes-library .library-tabs button {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  .notes-library .section-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .notes-library .section-head h2 {
+    margin-bottom: 0;
+  }
+  .notes-library .document-controls {
+    display: flex;
+    width: 100%;
+  }
+  .notes-library .search {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
+  }
+  .library-sort {
+    flex: 1;
+  }
+  .library-sort span {
+    display: none;
+  }
+  .library-sort select {
+    max-width: none;
+    width: 100%;
+  }
+  .notes-library .document-grid:not(.list) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .notes-library .document-preview {
+    height: 174px;
+    padding: 16px 12px 8px;
+  }
+  .notes-library .notebook-cover {
+    padding: 28px 10px 10px 20px;
+  }
+  .notes-library .notebook-cover strong {
+    font-size: 14px;
+  }
+  .notes-library .document-details {
+    padding: 12px;
+  }
+  .notes-library .document-details strong {
+    font-size: 14px;
+  }
+  .notes-library .document-details small {
+    font-size: 11px;
+  }
+  .office-addon {
+    gap: 10px;
+  }
+  .office-addon > div {
+    flex: 1;
+  }
+  .office-addon .text-button {
+    margin: 0;
+    flex: 1;
+    justify-content: center;
+  }
+}
+.notes-library .notebook-cover .cover-emblem {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  flex-shrink: 0;
+}
+.notes-library .notebook-card .format-tag {
+  display: none;
+}
+.notes-library .document-grid.list .notebook-cover .cover-emblem {
+  width: 17px;
+  height: 17px;
+  min-height: 17px;
+}
+.notes-library .section-head {
+  flex-wrap: wrap;
+}
+.notes-library .search {
+  width: 300px;
+  max-width: 100%;
+}
+@media (max-width: 700px) {
+  .notes-library .search {
+    width: 100%;
+  }
+}
+.notes-library .notebook-cover {
+  color: var(--cover-ink, #fff);
+}
+.notes-library .notebook-cover small {
+  color: inherit;
+  opacity: 0.8;
+}
+.notes-library .cover-spine {
+  background: currentColor;
+  opacity: 0.22;
+}

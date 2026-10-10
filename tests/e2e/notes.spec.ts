@@ -75,7 +75,7 @@ test("Handschrift, mehrere Seiten und Text über Sicherung wieder öffnen", asyn
   page,
 }, info) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
   await page.getByLabel("Dokumenttitel").fill("Mathe Notizen");
   await page
     .getByRole("button", { name: "Notizeinstellungen", exact: true })
@@ -177,7 +177,7 @@ test("Finger zeichnet nur nach Freigabe; Stift sperrt gleichzeitige Handballen",
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
   await draw(page, "touch");
   await expect(page.locator("[data-ink-stroke]")).toHaveCount(0);
   const surface = page.getByRole("img", { name: "Schreibfläche Seite 1" }),
@@ -208,7 +208,7 @@ test("Radieren, SVG-Ausgabe und Verlustwarnung beim Text-Export", async ({
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
   await draw(page);
   await page.getByRole("button", { name: "Radierer", exact: true }).click();
   await draw(page);
@@ -241,7 +241,7 @@ test("Abgebrochene Striche bleiben sauber; Textmarker und Drehen erhalten Notize
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
   const surface = page.getByRole("img", { name: "Schreibfläche Seite 1" }),
     box = (await surface.boundingBox())!;
   const e = {
@@ -281,7 +281,7 @@ test("Notizeinstellungen bleiben erhalten und schließen mit Escape", async ({
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
   const trigger = page.getByRole("button", {
     name: "Notizeinstellungen",
     exact: true,
@@ -341,7 +341,7 @@ test("Querformat zeigt große Schreibfläche und erreichbare Icon-Werkzeuge", as
 }) => {
   await page.setViewportSize({ width: 844, height: 390 });
   await page.goto("/");
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
   const area = (await page.locator(".ink-scroll").boundingBox())!;
   expect(area.height).toBeGreaterThan(230);
   expect(area.y + area.height).toBeLessThanOrEqual(390);
@@ -381,7 +381,7 @@ test("Zwei Finger zoomen ohne Striche zu verändern; Zoom bleibt nach Neustart",
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
   await draw(page);
   const before = await page.evaluate(
     () =>
@@ -435,7 +435,7 @@ test("Zweiter Finger bricht nur eine unfertige Fingerzeichnung ab", async ({
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
   await page
     .getByRole("button", { name: "Notizeinstellungen", exact: true })
     .click();
@@ -474,7 +474,7 @@ test("Seitenübersicht verwaltet Titel, Lesezeichen, Kopien und Reihenfolge", as
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
   await draw(page);
   await page
     .getByRole("button", { name: "Seitenübersicht", exact: true })
@@ -530,7 +530,7 @@ test("Auswahl verschiebt, kopiert und löscht Handschrift mit Rückgängig", asy
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
   await draw(page);
   const svg = page.locator(".ink-sheet"),
     raw = (await svg.boundingBox())!,
@@ -603,7 +603,7 @@ test("Browser-App startet offline und erhält lokale Notizen", async ({
     "Offline shell is only registered in production builds",
   );
   await page.goto("/");
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
   await draw(page);
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
@@ -785,7 +785,11 @@ test("Samsung-Übertragung prüft Dateien und übernimmt mehrere Notizen als neu
   await expect(page.locator(".document-card")).toHaveCount(2);
   await awaitSaved(page);
   await page.reload();
-  await expect(page.locator(".document-card")).toHaveCount(3);
+  await expect(page.locator(".document-card")).toHaveCount(2);
+  const filters = page.getByRole("group", { name: "Bibliothek filtern" });
+  await filters.getByRole("button", { name: /Office-Dokumente/ }).click();
+  await expect(page.locator(".document-card")).toHaveCount(1);
+  await filters.getByRole("button", { name: /Notizbücher/ }).click();
   await page.getByRole("button", { name: /Biologie.*1 Notizseiten/ }).click();
   await expect(page.locator(".ink-sheet image")).toHaveCount(1);
 });
@@ -824,7 +828,7 @@ test("Gerade Linien behalten zwei Punkte; Bibliothek findet Fach und Seitentitel
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
   await page.getByRole("button", { name: "Gerade Linie", exact: true }).click();
   const svg = page.locator(".ink-sheet"),
     r = (await svg.boundingBox())!,

@@ -1,4 +1,4 @@
-import type { OfficeDocument } from "../core/document";
+import { validLibraryMetadata, type OfficeDocument } from "../core/document";
 import { isNotebook } from "../notes/model";
 import { localStorageAdapter } from "./local";
 const NAME = "phone-office.documents",
@@ -28,6 +28,7 @@ function validate(value: unknown): OfficeDocument[] {
         typeof d.html === "string" &&
         typeof d.updatedAt === "string" &&
         typeof d.format === "string" &&
+        validLibraryMetadata(d) &&
         (d.notebook === undefined || isNotebook(d.notebook)),
     )
   )

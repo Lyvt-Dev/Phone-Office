@@ -15,7 +15,9 @@ test("Dokument bearbeiten, speichern und erneut öffnen", async ({
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Dein Arbeitsplatz", exact: true }).first(),
+    page
+      .getByRole("heading", { name: "Deine Notizbücher", exact: true })
+      .first(),
   ).toBeVisible();
   await page.screenshot({
     path: `/tmp/phone-office-${testInfo.project.name}.png`,

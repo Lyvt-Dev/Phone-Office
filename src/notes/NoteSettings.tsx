@@ -249,6 +249,7 @@ export function NoteSettings(p: Props) {
                   <option value="grid">Kariert</option>
                   <option value="ruled">Liniert</option>
                   <option value="plain">Leer</option>
+                  <option value="dots">Punktpapier</option>
                 </select>
               </label>
               {p.page.background && (
@@ -313,7 +314,7 @@ export function NoteSettings(p: Props) {
                 Notizbuch
               </legend>
               <label>
-                Schulfach
+                Ordner / Fach
                 <input
                   aria-label="Schulfach"
                   placeholder="Fach eintragen"

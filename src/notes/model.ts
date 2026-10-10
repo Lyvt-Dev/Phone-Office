@@ -1,6 +1,6 @@
 export const PAGE_WIDTH = 800;
 export const PAGE_HEIGHT = 1100;
-export type Paper = "plain" | "ruled" | "grid";
+export type Paper = "plain" | "ruled" | "grid" | "dots";
 export interface InkPoint {
   x: number;
   y: number;
@@ -46,12 +46,13 @@ export const defaultNotePreferences: NotePreferences = {
 export interface Notebook {
   version: 1;
   subject: string;
+  coverColor?: string;
   pages: NotePage[];
   preferences?: NotePreferences;
 }
-export const newPage = (): NotePage => ({
+export const newPage = (paper: Paper = "grid"): NotePage => ({
   id: crypto.randomUUID(),
-  paper: "grid",
+  paper,
   strokes: [],
 });
 export const newNotebook = (): Notebook => ({
@@ -84,6 +85,9 @@ export function isNotebook(value: unknown): value is Notebook {
           [8, 16, 32].includes(n.preferences.eraserSize)) &&
         (n.preferences.holdStraight === undefined ||
           typeof n.preferences.holdStraight === "boolean"))) &&
+    (n.coverColor === undefined ||
+      (typeof n.coverColor === "string" &&
+        /^#[0-9a-f]{6}$/i.test(n.coverColor))) &&
     typeof n.subject === "string" &&
     n.subject.length <= 200 &&
     Array.isArray(n.pages) &&
@@ -104,7 +108,7 @@ export function isNotebook(value: unknown): value is Notebook {
         (p.title === undefined ||
           (typeof p.title === "string" && p.title.length <= 200)) &&
         (p.bookmarked === undefined || typeof p.bookmarked === "boolean") &&
-        ["plain", "ruled", "grid"].includes(p.paper) &&
+        ["plain", "ruled", "grid", "dots"].includes(p.paper) &&
         Array.isArray(p.strokes) &&
         p.strokes.length <= 2000 &&
         new Set(p.strokes.map((s) => s?.id)).size === p.strokes.length &&
@@ -212,17 +216,19 @@ export function straightenStroke(s: InkStroke): InkStroke {
 }
 export function pageSvg(page: NotePage): string {
   const lines =
-    page.paper === "plain"
-      ? ""
-      : Array.from(
-          { length: Math.floor(PAGE_HEIGHT / 32) },
-          (_, i) => `<path d="M 0 ${(i + 1) * 32} H ${PAGE_WIDTH}"/>`,
-        ).join("") +
-        (page.paper === "grid"
-          ? Array.from(
-              { length: PAGE_WIDTH / 32 },
-              (_, i) => `<path d="M ${(i + 1) * 32} 0 V ${PAGE_HEIGHT}"/>`,
-            ).join("")
-          : "");
+    page.paper === "dots"
+      ? '<defs><pattern id="paper-dots" width="32" height="32" patternUnits="userSpaceOnUse"><circle cx="16" cy="16" r="1.5" fill="#b9cbd8"/></pattern></defs><rect width="100%" height="100%" fill="url(#paper-dots)"/>'
+      : page.paper === "plain"
+        ? ""
+        : Array.from(
+            { length: Math.floor(PAGE_HEIGHT / 32) },
+            (_, i) => `<path d="M 0 ${(i + 1) * 32} H ${PAGE_WIDTH}"/>`,
+          ).join("") +
+          (page.paper === "grid"
+            ? Array.from(
+                { length: PAGE_WIDTH / 32 },
+                (_, i) => `<path d="M ${(i + 1) * 32} 0 V ${PAGE_HEIGHT}"/>`,
+              ).join("")
+            : "");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}" viewBox="0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}"><rect width="100%" height="100%" fill="white"/><g fill="none" stroke="#d8e4ec" stroke-width="1">${lines}</g>${page.background ? `<image href="${page.background}" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}"/>` : ""}${page.strokes.map((s) => `<path d="${strokePath(s)}" fill="${s.color}" opacity="${strokeOpacity(s)}"/>`).join("")}</svg>`;
 }

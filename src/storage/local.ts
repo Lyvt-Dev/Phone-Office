@@ -1,5 +1,5 @@
 import { isNotebook } from "../notes/model";
-import type { OfficeDocument } from "../core/document";
+import { validLibraryMetadata, type OfficeDocument } from "../core/document";
 const KEY = "phone-office.documents.v1";
 export interface DocumentStorage {
   load(): OfficeDocument[];
@@ -20,6 +20,7 @@ export const localStorageAdapter: DocumentStorage = {
           typeof d.html === "string" &&
           typeof d.updatedAt === "string" &&
           typeof d.format === "string" &&
+          validLibraryMetadata(d) &&
           (d.notebook === undefined || isNotebook(d.notebook)),
       )
     )

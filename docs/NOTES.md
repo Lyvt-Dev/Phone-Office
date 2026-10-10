@@ -17,3 +17,7 @@ Die Oberfläche passt sich an Hoch-/Querformat und Tablets an. Kompakte scrollba
 ## Bedienung ab 0.7
 
 Zweiter Tipp auf das aktive Stift-, Textmarker- oder Radierersymbol öffnet die Werkzeugoptionen. Der Radierer kann ganze Striche oder nur berührte Stellen entfernen; Größen entsprechen Radien von 8, 16 oder 32 Seiteneinheiten. Eigene Handschrift ist radierbar, PDF-Hintergründe bleiben erhalten. Rückgängig/Wiederholen gilt für die ganze Radiergeste. Den Stylusknopf beim Kontakt gedrückt halten verwendet vorübergehend den gewählten Radiermodus; bei unterstützten lokalen Android-/Pointer-Signalen bleibt das Schreibwerkzeug ausgewählt. Ein während des Schreibens gedrückter Knopf startet den Radierer; zum Weiterschreiben Stift absetzen und neu ansetzen. Hardware-/Bluetooth-Fernfunktionen werden nicht zugesichert.
+
+## 0.7.5: Notizbibliothek
+
+Die Startseite zeigt standardmäßig Notizbücher; der zuletzt verwendete Notiz-/Office-Bereich kann beim Neustart wiederhergestellt werden. Cover und Favoriten werden in lokalen Daten und `.pnote` Version 4 gesichert. Ordner/Fächer gruppieren Notizbücher nach dem eingetragenen Ordner-/Fachnamen; keine leeren Ordnerbäume. Papierkorb-Einträge bleiben lokal erhalten, bis explizit endgültig gelöscht wird. Vorhandene Originaldateien werden nicht verändert. Punktpapier, Rechteck-/Ellipsenstriche und PNG-/JPEG-Bildseiten sind zusätzliche tatsächliche Funktionen. [Grenzen und weitere Entwicklung](NOTES-FEATURES.md).

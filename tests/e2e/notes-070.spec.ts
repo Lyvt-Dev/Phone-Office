@@ -40,7 +40,7 @@ test("Werkzeugdialoge, Teilradieren, Rückgängig und erneutes Öffnen", async (
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
   await page.getByRole("button", { name: "Stift", exact: true }).click();
   await expect(
     page.getByRole("dialog", { name: "Stifteinstellungen" }),
@@ -87,7 +87,7 @@ test("Stiftknopf radiert vorübergehend und lässt das Schreibwerkzeug ausgewäh
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
   await pen(page, "pointerdown", 40, 100);
   await pen(page, "pointermove", 200, 100);
   await pen(page, "pointerup", 200, 100);
@@ -132,18 +132,18 @@ test("Bibliothek filtert echte Notizen und Textdokumente ohne Beispieldaten", as
   await page
     .getByRole("button", { name: "Zurück zu Dokumenten", exact: true })
     .click();
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
   await awaitSaved(page);
   await page
     .getByRole("button", { name: "Zur Dokumentübersicht", exact: true })
     .click();
   const filters = page.getByRole("group", { name: "Bibliothek filtern" });
-  await filters.getByRole("button", { name: /Schulnotizen/ }).click();
+  await filters.getByRole("button", { name: /Notizbücher/ }).click();
   await expect(page.locator(".document-card")).toHaveCount(1);
   await expect(page.locator(".notebook-cover")).toHaveCount(1);
-  await filters.getByRole("button", { name: /Textdokumente/ }).click();
+  await filters.getByRole("button", { name: /Office-Dokumente/ }).click();
   await expect(page.locator(".document-card")).toHaveCount(1);
   await expect(page.locator(".notebook-cover")).toHaveCount(0);
-  await filters.getByRole("button", { name: /Alle Dateien/ }).click();
-  await expect(page.locator(".document-card")).toHaveCount(2);
+  await filters.getByRole("button", { name: /Notizbücher/ }).click();
+  await expect(page.locator(".document-card")).toHaveCount(1);
 });

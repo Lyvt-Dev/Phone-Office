@@ -38,7 +38,7 @@ async function saved(page: Page) {
 }
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
 });
 test("Stiftarten, Halten zum Begradigen und erneutes Öffnen", async ({
   page,

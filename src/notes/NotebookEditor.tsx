@@ -7,6 +7,8 @@ import {
   type PointerEvent,
 } from "react";
 import {
+  RectangleHorizontal,
+  Circle,
   PenLine,
   Highlighter,
   Eraser,
@@ -32,6 +34,7 @@ import {
 } from "lucide-react";
 import { PageOverview } from "./PageOverview";
 import {
+  shapePoints,
   eraseStrokePart,
   clampZoom,
   intersectsSelection,
@@ -81,7 +84,15 @@ export function NotebookEditor({
 }: Props) {
   const [index, setIndex] = useState(0),
     [tool, setTool] = useState<
-      "pen" | "marker" | "eraser" | "select" | "line" | "move" | "lasso"
+      | "pen"
+      | "marker"
+      | "eraser"
+      | "select"
+      | "line"
+      | "move"
+      | "lasso"
+      | "rectangle"
+      | "ellipse"
     >("pen");
   const prefs = notebook.preferences || defaultNotePreferences;
   const { color, width, finger } = prefs;
@@ -203,6 +214,7 @@ export function NotebookEditor({
     before: NotePage;
     erase: boolean;
     straight?: boolean;
+    shapeStart?: ReturnType<typeof inkPoint>;
     lastErase?: ReturnType<typeof inkPoint>;
   } | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
@@ -342,6 +354,8 @@ export function NotebookEditor({
       page,
       before: page,
       erase,
+      shapeStart:
+        tool === "rectangle" || tool === "ellipse" ? position(e) : undefined,
     };
     capture(e);
     setDraft(stroke);
@@ -484,9 +498,11 @@ export function NotebookEditor({
           cur.stroke = {
             ...cur.stroke,
             points:
-              tool === "line" || cur.straight
-                ? [cur.stroke.points[0], p]
-                : [...cur.stroke.points, p],
+              cur.shapeStart && (tool === "rectangle" || tool === "ellipse")
+                ? shapePoints(tool, cur.shapeStart, p)
+                : tool === "line" || cur.straight
+                  ? [cur.stroke.points[0], p]
+                  : [...cur.stroke.points, p],
           };
         }
       }
@@ -608,7 +624,16 @@ export function NotebookEditor({
           aria-label="Schreibwerkzeuge"
         >
           {(
-            ["pen", "marker", "eraser", "select", "lasso", "line"] as const
+            [
+              "pen",
+              "marker",
+              "eraser",
+              "select",
+              "lasso",
+              "line",
+              "rectangle",
+              "ellipse",
+            ] as const
           ).map((t, i) => {
             const Icon = [
               PenLine,
@@ -617,6 +642,8 @@ export function NotebookEditor({
               MousePointer2,
               Lasso,
               Ruler,
+              RectangleHorizontal,
+              Circle,
             ][i];
             const label = [
               "Stift",
@@ -625,6 +652,8 @@ export function NotebookEditor({
               "Handschrift auswählen",
               "Lasso-Auswahl",
               "Gerade Linie",
+              "Rechteck zeichnen",
+              "Ellipse zeichnen",
             ][i];
             return (
               <button
@@ -776,7 +805,10 @@ export function NotebookEditor({
             title="Seite hinzufügen"
             disabled={notebook.pages.length >= 50}
             onClick={() => {
-              onChange({ ...notebook, pages: [...notebook.pages, newPage()] });
+              onChange({
+                ...notebook,
+                pages: [...notebook.pages, newPage(page.paper)],
+              });
               setIndex(notebook.pages.length);
               setPast([]);
               setFuture([]);
@@ -927,12 +959,16 @@ export function NotebookEditor({
               height="32"
               patternUnits="userSpaceOnUse"
             >
-              <path
-                d={page.paper === "grid" ? "M 32 0 H 0 V 32" : "M 0 32 H 32"}
-                fill="none"
-                stroke="#d8e4ec"
-                strokeWidth="1"
-              />
+              {page.paper === "dots" ? (
+                <circle cx="16" cy="16" r="1.5" fill="#b9cbd8" />
+              ) : (
+                <path
+                  d={page.paper === "grid" ? "M 32 0 H 0 V 32" : "M 0 32 H 32"}
+                  fill="none"
+                  stroke="#d8e4ec"
+                  strokeWidth="1"
+                />
+              )}
             </pattern>
           </defs>
           <rect width={PAGE_WIDTH} height={PAGE_HEIGHT} fill="white" />

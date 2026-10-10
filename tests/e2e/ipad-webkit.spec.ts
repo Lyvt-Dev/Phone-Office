@@ -8,7 +8,7 @@ test("iPad WebKit: Handschrift, Zwei-Finger-Zoom, Seiten und Offline-Neustart", 
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
-  await page.getByRole("button", { name: /Neue Schulnotiz/ }).click();
+  await page.getByRole("button", { name: /Neues Notizbuch/ }).click();
   const area = page.locator(".ink-sheet"),
     r = (await area.boundingBox())!,
     clip = (await page.locator(".ink-scroll").boundingBox())!;

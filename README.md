@@ -1,6 +1,8 @@
 # Phone Office
 
-Lokaler mobiler Texteditor als klickbarer React-Prototyp und erste Implementierungsstufe. Electron ist die **Desktop-Hülle**; Capacitor stellt separate Projekte für **Android und iOS** bereit. Electron selbst läuft nicht auf diesen Mobilplattformen.
+Lokale Notiz-App für Handschrift, Arbeitsblätter und getippten Text. Word-/LibreOffice-Dateien gehören zum zusätzlichen Office-Arbeitsbereich. Capacitor stellt Projekte für **Android und iOS** bereit; Electron ist die **Desktop-Hülle** und läuft selbst nicht auf diesen Mobilplattformen.
+
+**0.7.5:** Notizbücher und Handschrift sind der Kern, Word/LibreOffice der Zusatz. Neue Bibliothek mit Favoriten, Coverfarben, Fach-/Ordnergruppen und Papierkorb; Punktpapier, geometrische Striche und Bildnotizen. [Release](docs/RELEASE-0.7.5.md) · [Funktionsstand und weitere Schritte](docs/NOTES-FEATURES.md).
 
 ## Start
 

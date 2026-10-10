@@ -26,6 +26,7 @@ export function PageOverview({
   onNotice,
 }: Props) {
   const [bookmarks, setBookmarks] = useState(false);
+  const [search, setSearch] = useState("");
   const panel = useDialog(onClose);
   return (
     <div
@@ -65,7 +66,9 @@ export function PageOverview({
           <button
             disabled={notebook.pages.length >= 50}
             onClick={() => {
-              const p = newPage();
+              const p = newPage(
+                notebook.pages.find((p) => p.id === current)?.paper,
+              );
               onChange({ ...notebook, pages: [...notebook.pages, p] }, p.id);
               onClose();
             }}
@@ -74,10 +77,24 @@ export function PageOverview({
             Neue Seite
           </button>
         </div>
+        <label className="page-search">
+          Seiten suchen
+          <input
+            aria-label="Seitentitel suchen"
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Nach Seitentitel suchen"
+          />
+        </label>
         <div className="page-overview-grid">
           {notebook.pages.map(
             (p, i) =>
-              (!bookmarks || p.bookmarked) && (
+              (!bookmarks || p.bookmarked) &&
+              (!search ||
+                (p.title || `Seite ${i + 1}`)
+                  .toLocaleLowerCase()
+                  .includes(search.toLocaleLowerCase())) && (
                 <article
                   key={p.id}
                   className={p.id === current ? "current" : ""}

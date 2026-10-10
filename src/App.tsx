@@ -1,3 +1,12 @@
+import { NotesLibrary } from "./notes/NotesLibrary";
+import { NotebookDetails } from "./notes/NotebookDetails";
+import {
+  librarySubjects,
+  duplicateNotebook,
+  trashDocument,
+  restoreDocument,
+  type LibrarySort,
+} from "./notes/library";
 import { version } from "../package.json";
 import { loadDocuments, saveDocuments } from "./storage/database";
 import { SamsungImport } from "./notes/SamsungImport";
@@ -24,11 +33,7 @@ import {
   Search,
   Upload,
   FileText,
-  MoreHorizontal,
-  Grid2X2,
   List,
-  Clock3,
-  FolderOpen,
   ShieldCheck,
   Bold,
   Italic,
@@ -54,6 +59,8 @@ import {
   Menu,
   PenLine,
   Type,
+  Star,
+  Trash2,
 } from "lucide-react";
 import {
   createDocument,
@@ -107,8 +114,25 @@ export default function App() {
   const [docs, setDocs] = useState<OfficeDocument[]>(boot.docs);
   const [active, setActive] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [view, setView] = useState<"grid" | "list">("list");
-  const [section, setSection] = useState("recent");
+  const [view, setView] = useState<"grid" | "list">("grid");
+  const [section, setSection] = useState(() => {
+    try {
+      const value = localStorage.getItem("phone-office.library-section");
+      return value && ["notes", "text", "favorites", "trash"].includes(value)
+        ? value
+        : "notes";
+    } catch {
+      return "notes";
+    }
+  });
+  const [subjectFilter, setSubjectFilter] = useState("");
+  const [librarySort, setLibrarySort] = useState<LibrarySort>("updated");
+  const [managing, setManaging] = useState<OfficeDocument | null>(null);
+  useEffect(() => {
+    try {
+      localStorage.setItem("phone-office.library-section", section);
+    } catch {}
+  }, [section]);
   const [dark, setDark] = useState(() => {
     try {
       return localStorage.getItem("phone-office.theme") === "dark";
@@ -277,6 +301,12 @@ export default function App() {
     return () => viewport.removeEventListener("resize", resize);
   }, [editor]);
   const open = (d: OfficeDocument) => {
+    if (d.trashedAt) {
+      setManaging(d);
+      return;
+    }
+    setSection(d.notebook ? "notes" : "text");
+    setSubjectFilter("");
     setActive(d.id);
     setNoteMode("ink");
     setSidebar(false);
@@ -357,6 +387,31 @@ export default function App() {
       return;
     }
     try {
+      if (
+        /\.(png|jpe?g)$/i.test(file.name) ||
+        ["image/png", "image/jpeg"].includes(file.type)
+      ) {
+        if (
+          !window.confirm(
+            "Bild als neue Notizseite öffnen? Es wird lokal passend auf die Seite verkleinert und als JPEG-Hintergrund gespeichert. Handschrift kann ergänzt werden; das Bild selbst bleibt in dieser Notiz unbeweglich. Originaldatei bleibt erhalten.",
+          )
+        )
+          return;
+        setBusy(true);
+        const { importImage } = await import("./notes/image");
+        const notebook = await importImage(file);
+        const d = {
+          ...createDocument(file.name.replace(/\.[^.]+$/, "")),
+          format: "NOTIZ",
+          notebook,
+        };
+        setDocs((prev) => [d, ...prev]);
+        open(d);
+        setNotice(
+          "Bild als neue lokale Notizseite geöffnet. Originaldatei bleibt erhalten.",
+        );
+        return;
+      }
       if (file.name.toLowerCase().endsWith(".pdf")) {
         if (
           !window.confirm(
@@ -489,20 +544,6 @@ export default function App() {
     );
     setModal(null);
   }
-  const filtered = docs
-    .filter((d) => section !== "notes" || !!d.notebook)
-    .filter((d) => section !== "text" || !d.notebook)
-    .filter((d) =>
-      [
-        d.title,
-        d.notebook?.subject || "",
-        ...(d.notebook?.pages.map((p) => p.title || "") || []),
-      ]
-        .join(" ")
-        .toLocaleLowerCase()
-        .includes(search.toLocaleLowerCase()),
-    )
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const tool = (
     label: string,
     icon: React.ReactNode,
@@ -559,7 +600,7 @@ export default function App() {
         ref={fileInput}
         type="file"
         hidden
-        accept=".pnote,.odt,.ott,.fodt,.sxw,.stw,.txt,.html,.htm,.docx,.doc,.rtf,.pdf"
+        accept=".png,.jpg,.jpeg,.pnote,.odt,.ott,.fodt,.sxw,.stw,.txt,.html,.htm,.docx,.doc,.rtf,.pdf"
         onChange={(e) => void importDocument(e.target.files?.[0])}
       />
       <input
@@ -582,6 +623,60 @@ export default function App() {
           e.target.value = "";
         }}
       />
+      {managing && (
+        <NotebookDetails
+          key={managing.id}
+          doc={managing}
+          subjects={librarySubjects(docs)}
+          onClose={() => setManaging(null)}
+          onSave={(next) => {
+            setDocs((prev) => prev.map((d) => (d.id === next.id ? next : d)));
+            setManaging(null);
+          }}
+          onDuplicate={() => {
+            try {
+              const copy = duplicateNotebook(managing);
+              setDocs((prev) => [copy, ...prev]);
+              setManaging(null);
+              setNotice("Notizbuch als unabhängige Kopie dupliziert.");
+            } catch (e) {
+              setNotice((e as Error).message);
+            }
+          }}
+          onTrash={() => {
+            setDocs((prev) =>
+              prev.map((d) => (d.id === managing.id ? trashDocument(d) : d)),
+            );
+            setManaging(null);
+            setNotice(
+              "In den Papierkorb verschoben. Wiederherstellen ist jederzeit möglich.",
+            );
+          }}
+          onRestore={() => {
+            setDocs((prev) =>
+              prev.map((d) => (d.id === managing.id ? restoreDocument(d) : d)),
+            );
+            setManaging(null);
+            setNotice("Lokale Kopie wiederhergestellt.");
+          }}
+          onDelete={() => {
+            if (
+              window.confirm(
+                `„${managing.title}“ endgültig aus der App löschen? Alle Seiten und getippter Text dieser lokalen Kopie werden entfernt. Eine importierte Originaldatei bleibt erhalten.`,
+              )
+            ) {
+              setDocs((prev) => prev.filter((d) => d.id !== managing.id));
+              setManaging(null);
+              setNotice("Lokale Kopie endgültig gelöscht.");
+            }
+          }}
+          onExport={() => {
+            open(managing);
+            setManaging(null);
+            setModal("export");
+          }}
+        />
+      )}
       {migration && (
         <SamsungImport
           onClose={() => setMigration(false)}
@@ -629,57 +724,69 @@ export default function App() {
           <img className="app-logo" src="./icons/icon-192.png" alt="" />
           phone<span className="brand-light">office</span>
         </a>
-        <button className="primary new-button" onClick={() => newDoc()}>
-          <Plus size={19} /> Neues Dokument
-        </button>
         <button
-          className="new-notebook-button"
-          aria-label="Schulnotiz im Menü erstellen"
+          className="primary new-button"
           onClick={newNote}
+          aria-label="Notizbuch im Menü erstellen"
         >
-          <PenLine size={20} />
-          Neue Schulnotiz
+          <PenLine size={21} /> Neues Notizbuch
         </button>
-        <div className="nav-label">DEIN ARBEITSPLATZ</div>
+        <div className="nav-label">DEINE NOTIZEN</div>
         <nav>
-          <button
-            className={section === "recent" ? "nav-item active" : "nav-item"}
-            onClick={() => {
-              setSection("recent");
-              setActive(null);
-              setSidebar(false);
-            }}
-          >
-            <Clock3 size={19} /> Bibliothek <span>{docs.length}</span>
-          </button>
-          <button
-            className={section === "notes" ? "nav-item active" : "nav-item"}
-            onClick={() => {
-              setSection("notes");
-              setActive(null);
-              setSidebar(false);
-            }}
-          >
-            <PenLine size={19} />
-            Schulnotizen<span>{docs.filter((d) => d.notebook).length}</span>
-          </button>
-          <button
-            className={section === "all" ? "nav-item active" : "nav-item"}
-            onClick={() => {
-              setSection("all");
-              setActive(null);
-              setSidebar(false);
-            }}
-          >
-            <FolderOpen size={19} /> Alle Dokumente
-          </button>
+          {[
+            ["notes", "Notizbücher", PenLine],
+            ["favorites", "Favoriten", Star],
+            ["trash", "Papierkorb", Trash2],
+          ].map(([id, label, Icon]) => {
+            const NavIcon = Icon as typeof PenLine;
+            return (
+              <button
+                key={String(id)}
+                className={section === id ? "nav-item active" : "nav-item"}
+                onClick={() => {
+                  setSection(String(id));
+                  setSubjectFilter("");
+                  setActive(null);
+                  setSidebar(false);
+                }}
+              >
+                <NavIcon size={20} />
+                {String(label)}
+                <span>
+                  {
+                    docs.filter((d) =>
+                      id === "trash"
+                        ? !!d.trashedAt
+                        : !d.trashedAt &&
+                          (id === "favorites" ? d.favorite : !!d.notebook),
+                    ).length
+                  }
+                </span>
+              </button>
+            );
+          })}
           <button
             className="nav-item"
             onClick={() => fileInput.current?.click()}
           >
-            <Upload size={19} /> Datei importieren
+            <Upload size={20} /> PDF / Notiz importieren
           </button>
         </nav>
+        <div className="nav-label">OFFICE-ZUSATZ</div>
+        <button
+          className={section === "text" ? "nav-item active" : "nav-item"}
+          onClick={() => {
+            setSection("text");
+            setSubjectFilter("");
+            setActive(null);
+            setSidebar(false);
+          }}
+        >
+          <FileText size={20} /> Word & LibreOffice
+        </button>
+        <button className="nav-item office-new" onClick={() => newDoc()}>
+          <Plus size={19} /> Neues Dokument
+        </button>
         <div className="sidebar-bottom">
           <div className="privacy-card">
             <span className="privacy-icon">
@@ -759,227 +866,35 @@ export default function App() {
           </div>
         </header>
         {!active ? (
-          <div className="dashboard">
-            <div className="intro">
-              <div>
-                <h1>Dein Arbeitsplatz</h1>
-                <p>Notizen und Dokumente. Lokal gespeichert.</p>
-              </div>
-            </div>
-            <section className="quick-actions">
-              <button className="quick-card create" onClick={newNote}>
-                <span className="quick-icon">
-                  <PenLine size={25} />
-                </span>
-                <div>
-                  <strong>Neue Schulnotiz</strong>
-                  <p>Handschrift, Zeichnungen und getippter Text</p>
-                </div>
-                <ArrowRight size={20} />
-              </button>
-              <button
-                className="quick-card create"
-                aria-label="Neues Dokument"
-                onClick={() => newDoc()}
-              >
-                <span className="quick-icon">
-                  <Plus size={25} />
-                </span>
-                <div>
-                  <strong>Neues Dokument</strong>
-                  <p>Ohne Vorlage oder Beispieltext</p>
-                </div>
-                <ArrowRight size={20} />
-              </button>
-              <button
-                className="quick-card import"
-                onClick={() => fileInput.current?.click()}
-              >
-                <span className="quick-icon">
-                  <Upload size={24} />
-                </span>
-                <div>
-                  <strong>Dokument öffnen</strong>
-                  <p>Eine Datei von deinem Gerät importieren</p>
-                </div>
-                <ArrowRight size={20} />
-              </button>
-            </section>
-            <div
-              className="library-tabs"
-              role="group"
-              aria-label="Bibliothek filtern"
-            >
-              {[
-                ["recent", "Alle Dateien"],
-                ["notes", "Schulnotizen"],
-                ["text", "Textdokumente"],
-              ].map(([id, label]) => (
-                <button
-                  key={id}
-                  aria-pressed={
-                    section === id || (id === "recent" && section === "all")
-                  }
-                  onClick={() => setSection(id)}
-                >
-                  {label}
-                  <span>
-                    {
-                      docs.filter((d) =>
-                        id === "notes"
-                          ? !!d.notebook
-                          : id === "text"
-                            ? !d.notebook
-                            : true,
-                      ).length
-                    }
-                  </span>
-                </button>
-              ))}
-            </div>
-            <section className="documents-section">
-              <div className="section-head">
-                <div>
-                  <h2>
-                    {section === "recent"
-                      ? "Deine Dokumente"
-                      : section === "notes"
-                        ? "Schulnotizen"
-                        : section === "text"
-                          ? "Textdokumente"
-                          : "Alle Dokumente"}{" "}
-                    <span>{filtered.length}</span>
-                  </h2>
-                  <p>
-                    Zuletzt bearbeitet zuerst · auf deinem Gerät gespeichert
-                  </p>
-                </div>
-                <div className="document-controls">
-                  <label className="search">
-                    <Search size={17} />
-                    <input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Dokumente suchen"
-                      aria-label="Dokumente suchen"
-                    />
-                    <kbd>⌕</kbd>
-                  </label>
-                  <div className="view-switch">
-                    <button
-                      className={view === "grid" ? "chosen" : ""}
-                      aria-label="Kachelansicht"
-                      onClick={() => setView("grid")}
-                    >
-                      <Grid2X2 size={18} />
-                    </button>
-                    <button
-                      className={view === "list" ? "chosen" : ""}
-                      aria-label="Listenansicht"
-                      onClick={() => setView("list")}
-                    >
-                      <List size={19} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-              {filtered.length ? (
-                <div className={"document-grid " + view}>
-                  {filtered.map((d) => (
-                    <article className="document-card" key={d.id}>
-                      <button className="document-open" onClick={() => open(d)}>
-                        <div className="document-preview">
-                          {d.notebook && (
-                            <div
-                              className="notebook-cover"
-                              aria-hidden="true"
-                              dangerouslySetInnerHTML={{
-                                __html: pageSvg(d.notebook.pages[0]),
-                              }}
-                            />
-                          )}
-                          <div
-                            className={
-                              "mini-paper " +
-                              (d.notebook ? "notebook-cover-title" : "")
-                            }
-                          >
-                            <h3>{d.title}</h3>
-                            <div>
-                              {new DOMParser()
-                                .parseFromString(d.html, "text/html")
-                                .body.textContent?.slice(0, 210)}
-                            </div>
-                          </div>
-                          <span className="format-tag">{d.format}</span>
-                        </div>
-                        <div className="document-details">
-                          <strong>{d.title}</strong>
-                          {d.notebook?.subject && (
-                            <span className="subject-label">
-                              {d.notebook.subject}
-                            </span>
-                          )}
-                          <small>
-                            <Clock3 size={12} />
-                            {new Date(d.updatedAt).toLocaleDateString("de-DE", {
-                              day: "numeric",
-                              month: "short",
-                            })}{" "}
-                            · {wordCount(d.html)} Wörter{" "}
-                            {d.notebook
-                              ? `· ${d.notebook.pages.length} Notizseiten`
-                              : ""}
-                          </small>
-                        </div>
-                      </button>
-                      <button
-                        className="card-menu icon-button"
-                        aria-label={`${d.title} exportieren`}
-                        onClick={() => {
-                          open(d);
-                          setModal("export");
-                        }}
-                      >
-                        <MoreHorizontal size={19} />
-                      </button>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <div className="empty-state">
-                  <span>
-                    <FileText size={29} />
-                  </span>
-                  <h3>
-                    {search ? "Noch kein Treffer" : "Noch keine Dokumente"}
-                  </h3>
-                  <p>
-                    {search
-                      ? "Versuche einen anderen Suchbegriff."
-                      : "Erstelle dein erstes Dokument oder öffne eine Datei."}
-                  </p>
-                  <button
-                    className="text-button"
-                    onClick={() => (section === "notes" ? newNote() : newDoc())}
-                  >
-                    {section === "notes"
-                      ? "Neue Schulnotiz erstellen"
-                      : "Neues Dokument erstellen"}{" "}
-                    <ArrowRight size={15} />
-                  </button>
-                </div>
-              )}
-            </section>
-            <footer>
-              <span>
-                <ShieldCheck size={18} /> {saveStatus}
-              </span>
-              <button onClick={() => setModal("formats")}>
-                Formatunterstützung ansehen <ArrowRight size={14} />
-              </button>
-            </footer>
-          </div>
+          <NotesLibrary
+            docs={docs}
+            section={section}
+            onSection={setSection}
+            search={search}
+            onSearch={setSearch}
+            view={view}
+            onView={setView}
+            subject={subjectFilter}
+            onSubject={setSubjectFilter}
+            sort={librarySort}
+            onSort={setLibrarySort}
+            onNew={newNote}
+            onNewOffice={() => newDoc()}
+            onImport={() => fileInput.current?.click()}
+            onSamsung={() => setMigration(true)}
+            onOpen={open}
+            onManage={setManaging}
+            onFavorite={(d) =>
+              setDocs((prev) =>
+                prev.map((item) =>
+                  item.id === d.id
+                    ? { ...item, favorite: !item.favorite }
+                    : item,
+                ),
+              )
+            }
+            saveStatus={saveStatus}
+          />
         ) : (
           <div className="editor-layout">
             <div className="editor-top">
