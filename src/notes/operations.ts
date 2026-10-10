@@ -1,4 +1,5 @@
 import {
+  touchesStroke,
   PAGE_HEIGHT,
   PAGE_WIDTH,
   type InkStroke,
@@ -150,6 +151,8 @@ export function eraseStrokePart(
   center: { x: number; y: number },
   radius: number,
 ): InkStroke[] {
+  // Avoid allocating copies of every point in unrelated strokes on large pages.
+  if (!touchesStroke(s, { ...center, pressure: 0.5 }, radius)) return [s];
   const radiusSquared = (radius + s.width / 2) ** 2;
   const inside = (p: { x: number; y: number }) =>
     (p.x - center.x) ** 2 + (p.y - center.y) ** 2 <= radiusSquared;

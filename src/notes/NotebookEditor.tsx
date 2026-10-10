@@ -631,7 +631,11 @@ export function NotebookEditor({
                 key={t}
                 className="note-icon"
                 aria-label={label}
-                title={label}
+                title={
+                  t === "pen" || t === "marker" || t === "eraser"
+                    ? `${label} · erneut tippen für Optionen`
+                    : label
+                }
                 aria-pressed={tool === t}
                 onClick={() => {
                   if (
