@@ -7,3 +7,5 @@
 - Writer-Exporte werden unabhängig gegen ODF 1.3 geprüft. Nach Veröffentlichung werden echte Release-Downloads auf Prüfsummen, Android-Update-Identität, iOS-Gerätearchitektur und identische Web-Inhalte überprüft.
 
 Die Tag-Pipeline veröffentlicht nur nach erfolgreichen Tests und beiden Geräte-Builds. Physisches Samsung-/iPad-Stiftverhalten wurde durch diese automatisierten Prüfungen nicht getestet.
+
+Lokal erfolgreich vor dem Release: 80 Unit-Tests in zehn Dateien, 160 Chromium-Produktionsfälle auf Handy/Tablet/Desktop, TypeScript-/Offline-Webbuild, Android-Release-Kompilierung und unabhängige ODF-1.3-Validierung. Der erste iPad-Lauf bestätigte alle fünf neuen Szenarien; ein alter Testselektor für die umbenannte PDF-Aktion wurde korrigiert. Der finale Tag muss sämtliche 18 WebKit-Fälle und beide nativen Geräte-Builds bestehen.

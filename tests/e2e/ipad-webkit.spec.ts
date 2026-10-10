@@ -88,7 +88,7 @@ test("iPad WebKit: PDF-Arbeitsblatt und PDF-Ausgabe funktionieren lokal", async 
   page.once("dialog", (d) => d.accept());
   const download = page.waitForEvent("download");
   await page
-    .getByRole("button", { name: "Handschriftseiten als PDF", exact: true })
+    .getByRole("button", { name: "Notizseiten als PDF", exact: true })
     .click();
   expect((await download).suggestedFilename()).toBe("iPad.pdf");
   expect(errors).toEqual([]);
