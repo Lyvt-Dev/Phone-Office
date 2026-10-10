@@ -361,7 +361,7 @@ export function NoteSettings(p: Props) {
                 }}
               >
                 <FileOutput aria-hidden="true" />
-                Handschriftseiten als PDF
+                Notizseiten als PDF
               </button>
               <button
                 className="note-setting-action"

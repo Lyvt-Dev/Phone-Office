@@ -21,3 +21,9 @@ Zweiter Tipp auf das aktive Stift-, Textmarker- oder Radierersymbol öffnet die 
 ## 0.7.5: Notizbibliothek
 
 Die Startseite zeigt standardmäßig Notizbücher; der zuletzt verwendete Notiz-/Office-Bereich kann beim Neustart wiederhergestellt werden. Cover und Favoriten werden in lokalen Daten und `.pnote` Version 4 gesichert. Ordner/Fächer gruppieren Notizbücher nach dem eingetragenen Ordner-/Fachnamen; keine leeren Ordnerbäume. Papierkorb-Einträge bleiben lokal erhalten, bis explizit endgültig gelöscht wird. Vorhandene Originaldateien werden nicht verändert. Punktpapier, Rechteck-/Ellipsenstriche und PNG-/JPEG-Bildseiten sind zusätzliche tatsächliche Funktionen. [Grenzen und weitere Entwicklung](NOTES-FEATURES.md).
+
+## 0.7.6: Haftnotizen und Gestaltung
+
+Das Haftnotiz-Symbol öffnet die Bearbeitung der aktuellen Seite. Nach dem Speichern lassen sich Haftnotizen im gleichen Modus auf dem Blatt ziehen; Abbruch bewahrt die gespeicherte Position. Zum Schreiben den Stift wählen. Text/Farbe/Breite, Bearbeiten/Löschen und Rückgängig sind verfügbar. Bibliothekssuche und `.pnote` Version 5 erhalten den Text. PDF rasterisiert Haftnotizen gemeinsam mit der Seite.
+
+Eigene Coverbilder werden in der Notizbuchverwaltung importiert und beim Speichern übernommen. App anpassen im Seitenmenü verändert Akzente, lokale Schriften, Schriftgröße, Bibliotheksdichte, Hintergrund und das Papier neuer Notizbücher. Diese gerätebezogenen Einstellungen liegen getrennt von den Notizdateien.

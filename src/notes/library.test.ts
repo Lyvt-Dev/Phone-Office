@@ -82,7 +82,7 @@ describe("Notizbibliothek 0.7.5", () => {
     n.notebook.pages[0].paper = "dots";
     const text = await blobText(exportNote(n)),
       reopened = importNote(text);
-    expect(JSON.parse(text).version).toBe(4);
+    expect(JSON.parse(text).version).toBe(5);
     expect(reopened.notebook).toEqual(n.notebook);
     expect(reopened.favorite).toBe(true);
     expect(reopened.id).not.toBe(n.id);

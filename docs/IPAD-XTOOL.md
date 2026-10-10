@@ -1,4 +1,4 @@
-# iPad mit xtool testen (0.7.5)
+# iPad mit xtool testen (0.7.6)
 
 Die Release-Datei `phone-office-ios-unsigned.ipa` enthält die native **arm64-Geräte-App** für iPhone und iPad. Sie ist noch nicht persönlich signiert und kann nicht allein durch Antippen in Safari installiert werden. Der GitHub-Build benutzt Xcode für die vorhandene Capacitor-App; **auf deinem Rechner übernimmt xtool Signierung und Installation**. Eine vollständige Umstellung des Capacitor-Projekts auf xtool/SwiftPM ist nicht implementiert.
 

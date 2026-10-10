@@ -6,6 +6,7 @@ export default defineConfig({
     "notes-060.spec.ts",
     "notes-070.spec.ts",
     "notes-075.spec.ts",
+    "notes-076.spec.ts",
   ],
   workers: 1,
   use: { baseURL: "http://127.0.0.1:4173" },

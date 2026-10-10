@@ -2,6 +2,8 @@
 
 Lokale Notiz-App für Handschrift, Arbeitsblätter und getippten Text. Word-/LibreOffice-Dateien gehören zum zusätzlichen Office-Arbeitsbereich. Capacitor stellt Projekte für **Android und iOS** bereit; Electron ist die **Desktop-Hülle** und läuft selbst nicht auf diesen Mobilplattformen.
 
+**0.7.6:** Haftnotizen auf dem Blatt, eigene Coverbilder, persönliche Akzente/Schriften/Größen und überarbeitete Dialoge. [Release](docs/RELEASE-0.7.6.md).
+
 **0.7.5:** Notizbücher und Handschrift sind der Kern, Word/LibreOffice der Zusatz. Neue Bibliothek mit Favoriten, Coverfarben, Fach-/Ordnergruppen und Papierkorb; Punktpapier, geometrische Striche und Bildnotizen. [Release](docs/RELEASE-0.7.5.md) · [Funktionsstand und weitere Schritte](docs/NOTES-FEATURES.md).
 
 ## Start
@@ -72,3 +74,7 @@ Die iPad-Auslieferung ist für 0.5 zunächst zurückgestellt; der Pages-Workflow
 ## Phone Office 0.7.0
 
 Werkzeuge mit eigenen Einstellungen per zweitem Tipp, Teilradierer mit Größenwahl, lokale Stylustasten-Anbindung und eine übersichtlichere Bibliothek. Android wird als nicht debuggbarer Release-Build mit dem Namen Phone Office erstellt; die bisherige Update-Identität bleibt erhalten. [Release und Grenzen](docs/RELEASE-0.7.0.md), [Prüfumfang](docs/VALIDATION-0.7.0.md).
+
+## Schriftlizenz
+
+Manrope wird lokal mitgeliefert (SIL Open Font License 1.1). Copyright und Lizenz: [OFL-Manrope.txt](public/fonts/OFL-Manrope.txt). Quelle: [Google Fonts / Manrope](https://github.com/google/fonts/tree/main/ofl/manrope).

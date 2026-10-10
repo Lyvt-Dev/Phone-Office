@@ -1,3 +1,4 @@
+import { validStickies, stickySvg, type StickyNote } from "./sticky";
 export const PAGE_WIDTH = 800;
 export const PAGE_HEIGHT = 1100;
 export type Paper = "plain" | "ruled" | "grid" | "dots";
@@ -21,6 +22,7 @@ export interface NotePage {
   title?: string;
   bookmarked?: boolean;
   background?: string;
+  stickies?: StickyNote[];
   strokes: InkStroke[];
 }
 export interface NotePreferences {
@@ -47,6 +49,7 @@ export interface Notebook {
   version: 1;
   subject: string;
   coverColor?: string;
+  coverImage?: string;
   pages: NotePage[];
   preferences?: NotePreferences;
 }
@@ -67,6 +70,10 @@ export function isNotebook(value: unknown): value is Notebook {
   return (
     !!n &&
     n.version === 1 &&
+    (n.coverImage === undefined ||
+      (typeof n.coverImage === "string" &&
+        n.coverImage.length <= 600000 &&
+        /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(n.coverImage))) &&
     (n.preferences === undefined ||
       (!!n.preferences &&
         /^#[0-9a-f]{6}$/i.test(n.preferences.color) &&
@@ -98,6 +105,7 @@ export function isNotebook(value: unknown): value is Notebook {
       (p) =>
         !!p &&
         typeof p.id === "string" &&
+        (p.stickies === undefined || validStickies(p.stickies)) &&
         (p.background === undefined ||
           (typeof p.background === "string" &&
             p.background.length <= 2000000 &&
@@ -230,5 +238,5 @@ export function pageSvg(page: NotePage): string {
                 (_, i) => `<path d="M ${(i + 1) * 32} 0 V ${PAGE_HEIGHT}"/>`,
               ).join("")
             : "");
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}" viewBox="0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}"><rect width="100%" height="100%" fill="white"/><g fill="none" stroke="#d8e4ec" stroke-width="1">${lines}</g>${page.background ? `<image href="${page.background}" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}"/>` : ""}${page.strokes.map((s) => `<path d="${strokePath(s)}" fill="${s.color}" opacity="${strokeOpacity(s)}"/>`).join("")}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}" viewBox="0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}"><rect width="100%" height="100%" fill="white"/><g fill="none" stroke="#d8e4ec" stroke-width="1">${lines}</g>${page.background ? `<image href="${page.background}" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}"/>` : ""}${(page.stickies || []).map(stickySvg).join("")}${page.strokes.map((s) => `<path d="${strokePath(s)}" fill="${s.color}" opacity="${strokeOpacity(s)}"/>`).join("")}</svg>`;
 }

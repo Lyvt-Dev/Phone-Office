@@ -674,7 +674,7 @@ test("PDF-Arbeitsblatt lokal beschriften, sichern und als PDF wieder öffnen", a
   page.once("dialog", (d) => d.accept());
   const wait = page.waitForEvent("download");
   await page
-    .getByRole("button", { name: "Handschriftseiten als PDF", exact: true })
+    .getByRole("button", { name: "Notizseiten als PDF", exact: true })
     .click();
   const download = await wait;
   const bytes = await readFile((await download.path())!);

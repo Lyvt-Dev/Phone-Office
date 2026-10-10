@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, Star, Copy, Trash2, RotateCcw, Download } from "lucide-react";
 import type { OfficeDocument } from "../core/document";
 import type { Paper } from "./model";
+import { importCover } from "./image";
 import { useDialog } from "./useDialog";
 interface Props {
   doc: OfficeDocument;
@@ -19,6 +20,9 @@ export function NotebookDetails(p: Props) {
     [title, setTitle] = useState(p.doc.title),
     [subject, setSubject] = useState(p.doc.notebook?.subject || ""),
     [color, setColor] = useState(p.doc.notebook?.coverColor || "#23634f"),
+    [coverImage, setCoverImage] = useState(p.doc.notebook?.coverImage),
+    [coverBusy, setCoverBusy] = useState(false),
+    [coverError, setCoverError] = useState(""),
     [favorite, setFavorite] = useState(p.doc.favorite || false),
     [paper, setPaper] = useState<Paper>(
       p.doc.notebook?.pages[0].paper || "grid",
@@ -100,6 +104,53 @@ export function NotebookDetails(p: Props) {
                 </datalist>
                 <fieldset>
                   <legend>Notizbuch-Cover</legend>
+                  {coverImage && (
+                    <img
+                      className="cover-upload-preview"
+                      src={coverImage}
+                      alt="Vorschau deines Coverbildes"
+                    />
+                  )}
+                  <label className="cover-upload">
+                    Eigenes Coverbild
+                    <input
+                      type="file"
+                      aria-label="Coverbild auswählen"
+                      accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                      disabled={coverBusy}
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = "";
+                        if (!f) return;
+                        setCoverBusy(true);
+                        setCoverError("");
+                        try {
+                          setCoverImage(await importCover(f));
+                        } catch (error) {
+                          setCoverError((error as Error).message);
+                        } finally {
+                          setCoverBusy(false);
+                        }
+                      }}
+                    />
+                  </label>
+                  {coverBusy && (
+                    <p role="status">Coverbild wird lokal vorbereitet …</p>
+                  )}
+                  {coverError && <p role="alert">{coverError}</p>}
+                  {coverImage && (
+                    <button
+                      className="note-setting-action"
+                      disabled={coverBusy}
+                      onClick={() => setCoverImage(undefined)}
+                    >
+                      Coverbild entfernen
+                    </button>
+                  )}
+                  <p className="setting-hint">
+                    PNG/JPEG · lokal zugeschnitten · bis 20 MB/24 Megapixel. Das
+                    Original bleibt erhalten.
+                  </p>
                   <div className="cover-swatches">
                     {[
                       "#23634f",
@@ -161,7 +212,7 @@ export function NotebookDetails(p: Props) {
             </label>
             <button
               className="primary note-settings-done"
-              disabled={!title.trim()}
+              disabled={!title.trim() || coverBusy}
               onClick={() =>
                 p.onSave({
                   ...p.doc,
@@ -174,6 +225,7 @@ export function NotebookDetails(p: Props) {
                           ...p.doc.notebook,
                           subject: subject.trim(),
                           coverColor: color,
+                          coverImage,
                           pages: p.doc.notebook.pages.map((pg, i) =>
                             i === 0 && !pg.background ? { ...pg, paper } : pg,
                           ),

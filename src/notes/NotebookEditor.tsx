@@ -7,6 +7,7 @@ import {
   type PointerEvent,
 } from "react";
 import {
+  StickyNote as StickyIcon,
   RectangleHorizontal,
   Circle,
   PenLine,
@@ -32,6 +33,7 @@ import {
   Lasso,
   Palette,
 } from "lucide-react";
+import { StickyManager, StickyLayer } from "./StickyNotes";
 import { PageOverview } from "./PageOverview";
 import {
   shapePoints,
@@ -93,10 +95,12 @@ export function NotebookEditor({
       | "lasso"
       | "rectangle"
       | "ellipse"
+      | "sticky"
     >("pen");
   const prefs = notebook.preferences || defaultNotePreferences;
   const { color, width, finger } = prefs;
   const [zoom, setZoom] = useState(prefs.zoom);
+  const [stickyManager, setStickyManager] = useState(false);
   const [overview, setOverview] = useState(false);
   const [focus, setFocus] = useState(false);
   const [movePreview, setMovePreview] = useState<InkStroke[] | null>(null);
@@ -293,6 +297,7 @@ export function NotebookEditor({
       }
       if (!finger || gesture.current) return;
     }
+    if (tool === "sticky") return;
     if (pending.current) return; // Ignore palms and other pointers while a stroke is active.
     if (e.pointerType === "mouse" && e.button !== 0) return;
     e.preventDefault();
@@ -623,6 +628,17 @@ export function NotebookEditor({
           role="toolbar"
           aria-label="Schreibwerkzeuge"
         >
+          <button
+            className={tool === "sticky" ? "note-icon active" : "note-icon"}
+            aria-label="Haftnotizen"
+            aria-pressed={tool === "sticky"}
+            onClick={() => {
+              setTool("sticky");
+              setStickyManager(true);
+            }}
+          >
+            <StickyIcon />
+          </button>
           {(
             [
               "pen",
@@ -892,6 +908,34 @@ export function NotebookEditor({
           </button>
         </div>
       )}
+      {stickyManager && (
+        <StickyManager
+          notes={page.stickies || []}
+          onClose={() => setStickyManager(false)}
+          onSave={(n) =>
+            commit({
+              ...page,
+              stickies: [
+                ...(page.stickies || []).filter((s) => s.id !== n.id),
+                n,
+              ],
+            })
+          }
+          onDelete={(id) =>
+            commit({
+              ...page,
+              stickies: (page.stickies || []).filter((s) => s.id !== id),
+            })
+          }
+        />
+      )}
+      {tool === "sticky" && !stickyManager && (
+        <div className="sticky-mode-hint">
+          <StickyIcon size={16} /> Haftnotizen ziehen ·{" "}
+          <button onClick={() => setStickyManager(true)}>Bearbeiten</button>
+          <button onClick={() => setTool("pen")}>Fertig</button>
+        </div>
+      )}
       {overview && (
         <PageOverview
           notebook={notebook}
@@ -987,6 +1031,19 @@ export function NotebookEditor({
               pointerEvents="none"
             />
           )}
+          <StickyLayer
+            key={page.id + (tool === "sticky" ? "edit" : "view")}
+            notes={page.stickies || []}
+            interactive={tool === "sticky"}
+            onMove={(n) =>
+              commit({
+                ...page,
+                stickies: (page.stickies || []).map((s) =>
+                  s.id === n.id ? n : s,
+                ),
+              })
+            }
+          />
           {[
             ...(erasedPage?.strokes || page.strokes).map(
               (s) => movePreview?.find((m) => m.id === s.id) || s,
@@ -995,6 +1052,7 @@ export function NotebookEditor({
           ].map((s) => (
             <g
               key={s.id}
+              pointerEvents={tool === "sticky" ? "none" : undefined}
               className={selected.includes(s.id) ? "selected-ink" : ""}
             >
               <InkPath stroke={s} />

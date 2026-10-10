@@ -25,7 +25,10 @@ export function libraryItems(
       return [
         d.title,
         d.notebook?.subject || "",
-        ...(d.notebook?.pages.map((p) => p.title || "") || []),
+        ...(d.notebook?.pages.flatMap((p) => [
+          p.title || "",
+          ...(p.stickies || []).map((s) => s.text),
+        ]) || []),
         body.textContent || "",
       ]
         .join(" ")
@@ -54,6 +57,7 @@ export function duplicateNotebook(doc: OfficeDocument): OfficeDocument {
   const notebook = structuredClone(doc.notebook);
   for (const page of notebook.pages) {
     page.id = crypto.randomUUID();
+    for (const sticky of page.stickies || []) sticky.id = crypto.randomUUID();
     for (const stroke of page.strokes) stroke.id = crypto.randomUUID();
   }
   return {

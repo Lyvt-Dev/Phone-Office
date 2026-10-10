@@ -7,7 +7,7 @@ export function exportNote(doc: OfficeDocument): Blob {
     [
       JSON.stringify({
         type: "phone-office-notebook",
-        version: 4,
+        version: 5,
         favorite: doc.favorite || false,
         title: doc.title,
         html: doc.html,
@@ -34,7 +34,7 @@ export function importNote(text: string): OfficeDocument {
   if (
     !n ||
     n.type !== "phone-office-notebook" ||
-    ![1, 2, 3, 4].includes(n.version) ||
+    ![1, 2, 3, 4, 5].includes(n.version) ||
     typeof n.title !== "string" ||
     n.title.length > 500 ||
     typeof n.html !== "string" ||

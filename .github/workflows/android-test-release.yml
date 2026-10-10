@@ -10,6 +10,7 @@ on:
       - "v0.6.0"
       - "v0.7.0"
       - "v0.7.5"
+      - "v0.7.6"
   workflow_dispatch:
 
 permissions:
@@ -103,7 +104,7 @@ jobs:
             exit 1
           fi
           grep "application-label:'Phone Office'" artifacts/package-info.txt
-          grep "versionName='0.7.5'" artifacts/package-info.txt
+          grep "versionName='0.7.6'" artifacts/package-info.txt
           if grep -q 'application-testOnly' artifacts/package-info.txt; then
             echo 'Refusing an APK that requires adb install -t'
             exit 1
@@ -182,7 +183,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "$GITHUB_REF_NAME" = "v0.7.5" ]; then
+          if [ "$GITHUB_REF_NAME" = "v0.7.6" ]; then
+            gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android.apk artifacts/phone-office-web-ipad.zip artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt artifacts-ipad/phone-office-ios-unsigned.ipa artifacts-ipad/SHA256SUMS-ios.txt artifacts-ipad/ios-build-info.txt --repo "$GITHUB_REPOSITORY" --verify-tag --title "Phone Office 0.7.6" --notes-file docs/RELEASE-0.7.6.md
+          elif [ "$GITHUB_REF_NAME" = "v0.7.5" ]; then
             gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android.apk artifacts/phone-office-web-ipad.zip artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt artifacts-ipad/phone-office-ios-unsigned.ipa artifacts-ipad/SHA256SUMS-ios.txt artifacts-ipad/ios-build-info.txt --repo "$GITHUB_REPOSITORY" --verify-tag --title "Phone Office 0.7.5" --notes-file docs/RELEASE-0.7.5.md
           elif [ "$GITHUB_REF_NAME" = "v0.7.0" ]; then
             gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android.apk artifacts/phone-office-web-ipad.zip artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt artifacts-ipad/phone-office-ios-unsigned.ipa artifacts-ipad/SHA256SUMS-ios.txt artifacts-ipad/ios-build-info.txt --repo "$GITHUB_REPOSITORY" --verify-tag --title "Phone Office 0.7.0" --notes-file docs/RELEASE-0.7.0.md

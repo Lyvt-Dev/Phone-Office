@@ -13,7 +13,12 @@ import {
   ArrowRight,
   Trash2,
 } from "lucide-react";
-import { coverInk, libraryItems, librarySubjects, type LibrarySort } from "./library";
+import {
+  coverInk,
+  libraryItems,
+  librarySubjects,
+  type LibrarySort,
+} from "./library";
 import { wordCount, type OfficeDocument } from "../core/document";
 interface Props {
   docs: OfficeDocument[];
@@ -198,17 +203,29 @@ export function NotesLibrary(p: Props) {
                     {d.notebook ? (
                       <>
                         <div
-                          className="notebook-cover"
+                          className={
+                            "notebook-cover" +
+                            (d.notebook.coverImage ? " has-cover-image" : "")
+                          }
                           aria-hidden="true"
                           style={
                             {
                               "--cover": d.notebook.coverColor || "#23634f",
-                              "--cover-ink": coverInk(
-                                d.notebook.coverColor || "#23634f",
-                              ),
+                              "--cover-ink": d.notebook.coverImage
+                                ? "#ffffff"
+                                : coverInk(d.notebook.coverColor || "#23634f"),
                             } as React.CSSProperties
                           }
                         >
+                          {d.notebook.coverImage && (
+                            <img
+                              className="cover-photo"
+                              src={d.notebook.coverImage}
+                              alt=""
+                              loading="lazy"
+                              draggable={false}
+                            />
+                          )}
                           <span className="cover-spine" />
                           <BookOpen className="cover-emblem" />
                           <strong>{d.title}</strong>

@@ -38,6 +38,10 @@ export function duplicatePage(notebook: Notebook, id: string): Notebook {
     title: original.title
       ? `${original.title.slice(0, 190)} (Kopie)`
       : undefined,
+    stickies: original.stickies?.map((s) => ({
+      ...s,
+      id: crypto.randomUUID(),
+    })),
     strokes: original.strokes.map((s) => ({
       ...s,
       id: crypto.randomUUID(),

@@ -13,9 +13,13 @@ export function useDialog(onClose: () => void) {
       if (e.key !== "Tab") return;
       const list = [
         ...(panel.current?.querySelectorAll<HTMLElement>(
-          "button:not(:disabled),input,select",
+          'button:not(:disabled),input:not(:disabled):not([type="hidden"]),select:not(:disabled),textarea:not(:disabled),a[href],[tabindex="0"]',
         ) || []),
-      ];
+      ].filter(
+        (el) =>
+          el.getClientRects().length &&
+          getComputedStyle(el).visibility !== "hidden",
+      );
       const first = list[0],
         last = list.at(-1);
       if (e.shiftKey && document.activeElement === first) {

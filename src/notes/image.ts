@@ -54,7 +54,12 @@ export function imageDimensions(bytes: Uint8Array): {
     );
   return { width, height };
 }
-export async function importImage(file: File): Promise<Notebook> {
+async function renderImage(
+  file: File,
+  targetWidth: number,
+  targetHeight: number,
+  cover = false,
+): Promise<string> {
   if (file.size > 20 * 1024 * 1024)
     throw new Error("Bild zu groß (maximal 20 MB).");
   imageDimensions(new Uint8Array(await file.arrayBuffer()));
@@ -74,32 +79,38 @@ export async function importImage(file: File): Promise<Notebook> {
     if (image.naturalWidth * image.naturalHeight > 24000000)
       throw new Error("Bild zu groß (maximal 24 Megapixel).");
     const canvas = document.createElement("canvas");
-    canvas.width = PAGE_WIDTH;
-    canvas.height = PAGE_HEIGHT;
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx)
       throw new Error("Bilddarstellung ist auf diesem Gerät nicht verfügbar.");
     ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, PAGE_WIDTH, PAGE_HEIGHT);
-    const ratio = Math.min(
-      PAGE_WIDTH / image.naturalWidth,
-      PAGE_HEIGHT / image.naturalHeight,
+    ctx.fillRect(0, 0, targetWidth, targetHeight);
+    const ratio = (cover ? Math.max : Math.min)(
+      targetWidth / image.naturalWidth,
+      targetHeight / image.naturalHeight,
     );
     const w = image.naturalWidth * ratio,
       h = image.naturalHeight * ratio;
-    ctx.drawImage(image, (PAGE_WIDTH - w) / 2, (PAGE_HEIGHT - h) / 2, w, h);
+    ctx.drawImage(image, (targetWidth - w) / 2, (targetHeight - h) / 2, w, h);
     const background = canvas.toDataURL("image/jpeg", 0.9);
     if (
-      background.length > 2000000 ||
+      background.length > (cover ? 600000 : 2000000) ||
       !background.startsWith("data:image/jpeg;base64,")
     )
       throw new Error(
         "Bildseite konnte nicht sicher gespeichert werden. Bitte Bild verkleinern.",
       );
-    const notebook = newNotebook();
-    notebook.pages[0] = { ...notebook.pages[0], paper: "plain", background };
-    return notebook;
+    return background;
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+export const importCover = (file: File) => renderImage(file, 480, 660, true);
+export async function importImage(file: File): Promise<Notebook> {
+  const background = await renderImage(file, PAGE_WIDTH, PAGE_HEIGHT);
+  const notebook = newNotebook();
+  notebook.pages[0] = { ...notebook.pages[0], paper: "plain", background };
+  return notebook;
 }

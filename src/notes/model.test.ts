@@ -161,7 +161,7 @@ it("erhält Stiftarten in Sicherungen und unterscheidet Druckverhalten und Deckk
     r.onload = () => resolve(String(r.result));
     r.readAsText(blob);
   });
-  expect(JSON.parse(text).version).toBe(4);
+  expect(JSON.parse(text).version).toBe(5);
   expect(importNote(text).notebook?.pages[0].strokes[0].penStyle).toBe(
     "ballpoint",
   );

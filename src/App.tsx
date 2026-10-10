@@ -1,3 +1,5 @@
+import { AppearanceSettings } from "./ui/AppearanceSettings";
+import { applyAppearance, loadAppearance, accents } from "./ui/appearance";
 import { NotesLibrary } from "./notes/NotesLibrary";
 import { NotebookDetails } from "./notes/NotebookDetails";
 import {
@@ -27,6 +29,7 @@ import { TableKit } from "@tiptap/extension-table";
 import Image from "@tiptap/extension-image";
 import { Extension } from "@tiptap/react";
 import {
+  Palette,
   ArrowLeft,
   ArrowRight,
   Plus,
@@ -133,6 +136,8 @@ export default function App() {
       localStorage.setItem("phone-office.library-section", section);
     } catch {}
   }, [section]);
+  const [appearance, setAppearance] = useState(loadAppearance);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [dark, setDark] = useState(() => {
     try {
       return localStorage.getItem("phone-office.theme") === "dark";
@@ -148,6 +153,19 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(boot.error);
   const [storedSaveStatus, setSaveStatus] = useState("Lokal gespeichert");
+  useEffect(() => {
+    applyAppearance(appearance);
+    try {
+      localStorage.setItem(
+        "phone-office.appearance.v1",
+        JSON.stringify(appearance),
+      );
+    } catch {
+      setNotice(
+        "Gestaltung konnte nicht dauerhaft gespeichert werden. Der lokale Einstellungsspeicher ist voll oder gesperrt.",
+      );
+    }
+  }, [appearance]);
   const [lastSaved, setLastSaved] = useState<OfficeDocument[] | null>(null);
   const saveStatus =
     storedSaveStatus === "Lokal gespeichert" && lastSaved !== docs
@@ -325,10 +343,13 @@ export default function App() {
       setNotice(boot.error || "Dokumentspeicher wird noch geöffnet.");
       return;
     }
+    const notebook = newNotebook();
+    notebook.coverColor = accents[appearance.accent].color;
+    notebook.pages[0].paper = appearance.defaultPaper;
     const d = {
       ...createDocument("Unbenannte Notiz"),
       format: "NOTIZ",
-      notebook: newNotebook(),
+      notebook,
     };
     setDocs((prev) => [d, ...prev]);
     open(d);
@@ -360,7 +381,7 @@ export default function App() {
       : "";
     if (
       !window.confirm(
-        "PDF enthält alle Handschriftseiten als Bilder, inklusive PDF-Hintergründen. Handschrift ist darin nicht mehr bearbeitbar oder durchsuchbar." +
+        "PDF enthält alle Notizseiten als Bilder, inklusive Haftnotizen und PDF-Hintergründen. Handschrift und Haftnotizen sind darin nicht mehr einzeln bearbeitbar oder durchsuchbar." +
           extra +
           " Für eine bearbeitbare Sicherung .pnote verwenden. Als neue PDF ausgeben?",
       )
@@ -623,6 +644,15 @@ export default function App() {
           e.target.value = "";
         }}
       />
+      {appearanceOpen && (
+        <AppearanceSettings
+          value={appearance}
+          onChange={setAppearance}
+          dark={dark}
+          onTheme={() => setDark(!dark)}
+          onClose={() => setAppearanceOpen(false)}
+        />
+      )}
       {managing && (
         <NotebookDetails
           key={managing.id}
@@ -814,6 +844,15 @@ export default function App() {
                 : "Browser-App"}
             </span>
           </p>
+          <button
+            className="nav-item"
+            onClick={() => {
+              setAppearanceOpen(true);
+              setSidebar(false);
+            }}
+          >
+            <Palette size={22} /> App anpassen
+          </button>
           <button className="nav-item" onClick={() => setModal("formats")}>
             <Settings2 size={18} /> Formate & App-Info
           </button>
