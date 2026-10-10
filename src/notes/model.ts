@@ -6,11 +6,13 @@ export interface InkPoint {
   y: number;
   pressure: number;
 }
+export type PenStyle = "ballpoint" | "fountain" | "pencil";
 export interface InkStroke {
   id: string;
   color: string;
   width: number;
   tool: "pen" | "marker";
+  penStyle?: PenStyle;
   points: InkPoint[];
 }
 export interface NotePage {
@@ -26,12 +28,16 @@ export interface NotePreferences {
   width: number;
   finger: boolean;
   zoom: number;
+  penStyle?: PenStyle;
+  holdStraight?: boolean;
 }
 export const defaultNotePreferences: NotePreferences = {
   color: "#26322f",
   width: 3,
   finger: false,
   zoom: 100,
+  penStyle: "fountain",
+  holdStraight: true,
 };
 export interface Notebook {
   version: 1;
@@ -63,7 +69,13 @@ export function isNotebook(value: unknown): value is Notebook {
         typeof n.preferences.finger === "boolean" &&
         Number.isFinite(n.preferences.zoom) &&
         n.preferences.zoom >= 50 &&
-        n.preferences.zoom <= 300)) &&
+        n.preferences.zoom <= 300 &&
+        (n.preferences.penStyle === undefined ||
+          ["ballpoint", "fountain", "pencil"].includes(
+            n.preferences.penStyle,
+          )) &&
+        (n.preferences.holdStraight === undefined ||
+          typeof n.preferences.holdStraight === "boolean"))) &&
     typeof n.subject === "string" &&
     n.subject.length <= 200 &&
     Array.isArray(n.pages) &&
@@ -97,6 +109,8 @@ export function isNotebook(value: unknown): value is Notebook {
             s.width >= 1 &&
             s.width <= 24 &&
             ["pen", "marker"].includes(s.tool) &&
+            (s.penStyle === undefined ||
+              ["ballpoint", "fountain", "pencil"].includes(s.penStyle)) &&
             Array.isArray(s.points) &&
             s.points.length > 0 &&
             s.points.length <= 3000 &&
@@ -129,7 +143,14 @@ export function inkPoint(x: number, y: number, pressure: number): InkPoint {
 // A single filled outline per stroke keeps vector output compact and preserves pressure.
 export function strokePath(s: InkStroke): string {
   const radius = (p: InkPoint) =>
-    s.width * (s.tool === "marker" ? 0.5 : 0.15 + p.pressure * 0.7);
+    s.width *
+    (s.tool === "marker"
+      ? 0.5
+      : s.penStyle === "ballpoint"
+        ? 0.42
+        : s.penStyle === "pencil"
+          ? 0.12 + p.pressure * 0.38
+          : 0.15 + p.pressure * 0.7);
   const pts = s.points;
   if (pts.length === 1) {
     const p = pts[0],
@@ -171,6 +192,16 @@ export function touchesStroke(s: InkStroke, p: InkPoint, radius = 16): boolean {
     );
   });
 }
+export function strokeOpacity(s: InkStroke): number {
+  return s.tool === "marker" ? 0.3 : s.penStyle === "pencil" ? 0.65 : 1;
+}
+export function straightenStroke(s: InkStroke): InkStroke {
+  const first = s.points[0],
+    last = s.points.at(-1)!;
+  return Math.hypot(last.x - first.x, last.y - first.y) >= 12
+    ? { ...s, points: [first, last] }
+    : s;
+}
 export function pageSvg(page: NotePage): string {
   const lines =
     page.paper === "plain"
@@ -185,5 +216,5 @@ export function pageSvg(page: NotePage): string {
               (_, i) => `<path d="M ${(i + 1) * 32} 0 V ${PAGE_HEIGHT}"/>`,
             ).join("")
           : "");
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}" viewBox="0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}"><rect width="100%" height="100%" fill="white"/><g fill="none" stroke="#d8e4ec" stroke-width="1">${lines}</g>${page.background ? `<image href="${page.background}" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}"/>` : ""}${page.strokes.map((s) => `<path d="${strokePath(s)}" fill="${s.color}" opacity="${s.tool === "marker" ? 0.3 : 1}"/>`).join("")}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}" viewBox="0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}"><rect width="100%" height="100%" fill="white"/><g fill="none" stroke="#d8e4ec" stroke-width="1">${lines}</g>${page.background ? `<image href="${page.background}" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}"/>` : ""}${page.strokes.map((s) => `<path d="${strokePath(s)}" fill="${s.color}" opacity="${strokeOpacity(s)}"/>`).join("")}</svg>`;
 }

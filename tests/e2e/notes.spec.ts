@@ -289,7 +289,7 @@ test("Notizeinstellungen bleiben erhalten und schließen mit Escape", async ({
   });
   await expect(dialog).toBeVisible();
   await page.getByRole("button", { name: "Blau", exact: true }).click();
-  await page.getByLabel("Strichstärke").selectOption("6");
+  await page.getByLabel("Strichstärke", { exact: true }).selectOption("6");
   await page.getByLabel("Notizzoom", { exact: true }).selectOption("125");
   await page.getByRole("checkbox", { name: "Mit Finger zeichnen" }).check();
   await page.keyboard.press("Escape");
@@ -309,7 +309,9 @@ test("Notizeinstellungen bleiben erhalten und schließen mit Escape", async ({
   await expect(page.getByLabel("Stiftfarbe", { exact: true })).toHaveValue(
     "#2563eb",
   );
-  await expect(page.getByLabel("Strichstärke")).toHaveValue("6");
+  await expect(page.getByLabel("Strichstärke", { exact: true })).toHaveValue(
+    "6",
+  );
   await expect(page.getByLabel("Notizzoom", { exact: true })).toHaveValue(
     "125",
   );
@@ -735,7 +737,7 @@ test("Samsung-Übertragung prüft Dateien und übernimmt mehrere Notizen als neu
       .getByRole("button", { name: "Menü öffnen", exact: true })
       .click();
   await expect(page.locator(".sidebar-version")).toContainText(
-    "Phone Office 0.5.0",
+    "Phone Office 0.6.0",
   );
   await page
     .getByRole("button", { name: "Samsung Notes importieren", exact: true })

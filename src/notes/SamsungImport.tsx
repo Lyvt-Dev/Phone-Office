@@ -1,13 +1,20 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Upload,
   X,
   CheckCircle2,
   AlertTriangle,
   FileOutput,
+  FolderSync,
 } from "lucide-react";
 import type { OfficeDocument } from "../core/document";
 import { prepareSamsungTransfer, type TransferItem } from "./transfer";
+import {
+  folderAvailable,
+  NotesFolder,
+  scanExports,
+  rememberExports,
+} from "./folder";
 import { useDialog } from "./useDialog";
 interface Props {
   onClose: () => void;
@@ -19,6 +26,52 @@ export function SamsungImport({ onClose, onImport }: Props) {
     [error, setError] = useState("");
   const [items, setItems] = useState<TransferItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const folderStamps = useRef(new Map<string, string>());
+  const [folderMessage, setFolderMessage] = useState("");
+  async function folderImport(choose: boolean) {
+    setBusy(true);
+    setError("");
+    setItems([]);
+    try {
+      if (choose && (await NotesFolder.choose()).cancelled) return;
+      const result = await scanExports(setProgress);
+      folderStamps.current = result.stamps;
+      if (result.warnings.length) setError(result.warnings.join(" · "));
+      setFolderMessage(
+        !result.connected
+          ? "Bitte zuerst einen Exportordner freigeben."
+          : !result.files.length
+            ? `In diesem Durchlauf keine neuen unterstützten Exporte gefunden.${result.remaining ? " Weitere Exporte mit „Neue Exporte suchen“ prüfen." : ""}`
+            : `${result.files.length} neue Exporte gefunden.${result.remaining ? " Weitere Exporte anschließend suchen." : ""}`,
+      );
+      const prepared = await prepareSamsungTransfer(result.files, (name, n) =>
+        setProgress(`${n} / ${result.files.length} · ${name}`),
+      );
+      setItems(prepared);
+      setSelected(
+        new Set(prepared.flatMap((i) => (i.document ? [i.document.id] : []))),
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+      setProgress("");
+    }
+  }
+  useEffect(() => {
+    if (!folderAvailable()) return;
+    let active = true;
+    NotesFolder.scan()
+      .then((result) => {
+        if (active && result.connected) void folderImport(false);
+      })
+      .catch((e) => {
+        if (active) setError((e as Error).message);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   const liveBusy = useRef(busy);
   liveBusy.current = busy;
   const panel = useDialog(() => {
@@ -86,6 +139,41 @@ export function SamsungImport({ onClose, onImport }: Props) {
             .pnote-Sicherungen sind ebenfalls importierbar.
           </p>
         </div>
+        {folderAvailable() && (
+          <div className="folder-import-actions">
+            <p>
+              Exportordner einmal freigeben. Neue PDF- und .pnote-Exporte werden
+              lokal erkannt; bereits übernommene Inhalte werden übersprungen.
+              Samsung Notes muss weiterhin exportieren.
+            </p>
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={() => void folderImport(true)}
+            >
+              <FolderSync size={20} />
+              Exportordner verbinden
+            </button>
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={() => void folderImport(false)}
+            >
+              Neue Exporte suchen
+            </button>
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={async () => {
+                await NotesFolder.disconnect();
+                setFolderMessage("Ordnerfreigabe entfernt.");
+              }}
+            >
+              Ordner trennen
+            </button>
+            {folderMessage && <p role="status">{folderMessage}</p>}
+          </div>
+        )}
         <input
           ref={picker}
           type="file"
@@ -96,6 +184,7 @@ export function SamsungImport({ onClose, onImport }: Props) {
           onChange={async (e) => {
             const files = Array.from(e.target.files || []);
             if (!files.length) return;
+            folderStamps.current.clear();
             setBusy(true);
             setError("");
             setItems([]);
@@ -191,6 +280,19 @@ export function SamsungImport({ onClose, onImport }: Props) {
               setError("");
               try {
                 await onImport(documents);
+                try {
+                  rememberExports(
+                    items
+                      .filter((i) => i.document && selected.has(i.document.id))
+                      .flatMap((i) =>
+                        folderStamps.current.get(i.name)
+                          ? [folderStamps.current.get(i.name)!]
+                          : [],
+                      ),
+                  );
+                } catch {
+                  /* A full history store permits duplicates on the next scan, never data loss. */
+                }
               } catch (e) {
                 setError(
                   "Nicht übernommen: " +

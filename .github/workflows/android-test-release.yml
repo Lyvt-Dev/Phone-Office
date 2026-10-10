@@ -7,6 +7,7 @@ on:
     tags:
       - "v*-android-test*"
       - "v0.5.0"
+      - "v0.6.0"
   workflow_dispatch:
 
 permissions:
@@ -113,9 +114,49 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  ipad:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Select newest installed Xcode
+        run: |
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          import re, subprocess
+          choices = [(tuple(map(int, re.findall(r'\d+', p.stem))), p) for p in Path('/Applications').glob('Xcode_*.app') if re.fullmatch(r'Xcode_\d+(?:\.\d+)*', p.stem)]
+          if choices:
+              subprocess.run(['sudo','xcode-select','--switch',str(max(choices)[1] / 'Contents/Developer')], check=True)
+          subprocess.run(['xcodebuild','-version'], check=True)
+          PYCODE
+      - name: Prepare native iPad app
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          npx cap sync ios
+      - name: Validate iPad editor with WebKit
+        run: |
+          npx playwright install webkit
+          npx playwright test --config playwright.webkit.config.ts
+      - name: Compile actual arm64 iPhone and iPad app
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath "$RUNNER_TEMP/phone-office-ipad" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+      - name: Verify and package unsigned IPA for xtool
+        run: python3 scripts/package-ios-unsigned.py "$RUNNER_TEMP/phone-office-ipad/Build/Products/Release-iphoneos/App.app" artifacts-ipad
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phone-office-ipad-xtool
+          path: artifacts-ipad/
+          if-no-files-found: error
+          retention-days: 30
+
   publish:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: build
+    needs: [build, ipad]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -125,11 +166,17 @@ jobs:
         with:
           name: phone-office-android-test
           path: artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          name: phone-office-ipad-xtool
+          path: artifacts-ipad
       - name: Publish project release or test prerelease
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "$GITHUB_REF_NAME" = "v0.5.0" ]; then
+          if [ "$GITHUB_REF_NAME" = "v0.6.0" ]; then
+            gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android-test.apk artifacts/phone-office-web-ipad.zip artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt artifacts-ipad/phone-office-ios-unsigned.ipa artifacts-ipad/SHA256SUMS-ios.txt artifacts-ipad/ios-build-info.txt --repo "$GITHUB_REPOSITORY" --verify-tag --title "Phone Office 0.6.0" --notes-file docs/RELEASE-0.6.0.md
+          elif [ "$GITHUB_REF_NAME" = "v0.5.0" ]; then
             gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android-test.apk artifacts/phone-office-web-ipad.zip artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt --repo "$GITHUB_REPOSITORY" --verify-tag --title "Phone Office 0.5.0" --notes-file docs/RELEASE-0.5.0.md
           else
             gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android-test.apk artifacts/phone-office-web-ipad.zip artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt --repo "$GITHUB_REPOSITORY" --verify-tag --prerelease --title "Phone Office Android-Test $GITHUB_REF_NAME" --notes-file docs/ANDROID-TEST-RELEASE.md

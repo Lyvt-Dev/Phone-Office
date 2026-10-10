@@ -101,3 +101,44 @@ export function intersectsSelection(
     return start <= end;
   });
 }
+
+export function intersectsLasso(
+  s: InkStroke,
+  polygon: { x: number; y: number }[],
+): boolean {
+  if (polygon.length < 3) return false;
+  const inside = (p: { x: number; y: number }) => {
+    let hit = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const a = polygon[i],
+        b = polygon[j];
+      if (
+        a.y > p.y !== b.y > p.y &&
+        p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x
+      )
+        hit = !hit;
+    }
+    return hit;
+  };
+  const cross = (
+    a: { x: number; y: number },
+    b: { x: number; y: number },
+    c: { x: number; y: number },
+  ) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+  const between = (a: number, b: number, c: number, d: number) =>
+    Math.max(Math.min(a, b), Math.min(c, d)) <=
+    Math.min(Math.max(a, b), Math.max(c, d));
+  return s.points.some((p, i) => {
+    if (inside(p)) return true;
+    const q = s.points[Math.max(0, i - 1)];
+    return polygon.some((a, j) => {
+      const b = polygon[(j + 1) % polygon.length];
+      return (
+        between(p.x, q.x, a.x, b.x) &&
+        between(p.y, q.y, a.y, b.y) &&
+        cross(p, q, a) * cross(p, q, b) <= 0 &&
+        cross(a, b, p) * cross(a, b, q) <= 0
+      );
+    });
+  });
+}

@@ -13,7 +13,13 @@ import {
   Moon,
   FileOutput,
 } from "lucide-react";
-import type { Notebook, NotePage, NotePreferences, Paper } from "./model";
+import type {
+  Notebook,
+  NotePage,
+  NotePreferences,
+  Paper,
+  PenStyle,
+} from "./model";
 interface Props {
   notebook: Notebook;
   page: NotePage;
@@ -99,6 +105,30 @@ export function NoteSettings(p: Props) {
             <Palette aria-hidden="true" />
             Stift
           </legend>
+          <label>
+            Stiftart
+            <select
+              aria-label="Stiftart in Einstellungen"
+              value={p.preferences.penStyle || "fountain"}
+              onChange={(e) =>
+                p.onPreferences({ penStyle: e.target.value as PenStyle })
+              }
+            >
+              <option value="ballpoint">Kugelschreiber</option>
+              <option value="fountain">Füller</option>
+              <option value="pencil">Bleistift</option>
+            </select>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={p.preferences.holdStraight !== false}
+              onChange={(e) =>
+                p.onPreferences({ holdStraight: e.target.checked })
+              }
+            />
+            Halten zum Begradigen (650 ms)
+          </label>
           <div className="ink-swatches" aria-label="Stiftfarben">
             {[
               ["#26322f", "Schwarz"],

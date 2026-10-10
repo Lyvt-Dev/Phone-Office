@@ -137,3 +137,53 @@ it("speichert Notizeinstellungen und validiert importierte Einstellungswerte", (
     isNotebook({ ...n, preferences: { ...n.preferences, finger: "yes" } }),
   ).toBe(false);
 });
+
+it("erhält Stiftarten in Sicherungen und unterscheidet Druckverhalten und Deckkraft", async () => {
+  const { strokeOpacity } = await import("./model");
+  const s = stroke();
+  const fixed = { ...s, penStyle: "ballpoint" as const };
+  expect(strokePath(fixed)).toBe(
+    strokePath({
+      ...fixed,
+      points: fixed.points.map((p) => ({ ...p, pressure: 1 })),
+    }),
+  );
+  expect(strokePath({ ...s, penStyle: "fountain" })).not.toBe(
+    strokePath({ ...s, penStyle: "pencil" }),
+  );
+  expect(strokeOpacity({ ...s, penStyle: "pencil" })).toBe(0.65);
+  const notebook = newNotebook();
+  notebook.pages[0].strokes = [fixed];
+  const doc = { ...createDocument(), notebook };
+  const blob = exportNote(doc);
+  const text = await new Promise<string>((resolve) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.readAsText(blob);
+  });
+  expect(JSON.parse(text).version).toBe(3);
+  expect(importNote(text).notebook?.pages[0].strokes[0].penStyle).toBe(
+    "ballpoint",
+  );
+  expect(
+    isNotebook({
+      ...notebook,
+      pages: [{ ...notebook.pages[0], strokes: [{ ...s, penStyle: "fake" }] }],
+    }),
+  ).toBe(false);
+});
+it("begradigt einen gehaltenen Strich ohne Endpunkte oder Druckwerte zu verschieben", async () => {
+  const { straightenStroke } = await import("./model");
+  const s = {
+    ...stroke(),
+    points: [
+      inkPoint(10, 10, 0.2),
+      inkPoint(30, 50, 0.6),
+      inkPoint(100, 80, 0.9),
+    ],
+  };
+  expect(straightenStroke(s).points).toEqual([s.points[0], s.points[2]]);
+  expect(s.points).toHaveLength(3);
+  const dot = { ...s, points: [inkPoint(1, 1, 0.5)] };
+  expect(straightenStroke(dot)).toBe(dot);
+});

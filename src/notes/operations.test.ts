@@ -115,3 +115,31 @@ it("hält PDF-Bildhintergründe im SVG und verhindert aktive importierte Inhalte
     }),
   ).toBe(false);
 });
+
+it("wählt mit einem Lasso auch kreuzende Segmente zwischen Messpunkten aus", async () => {
+  const { intersectsLasso } = await import("./operations");
+  const polygon = [
+    { x: 100, y: 100 },
+    { x: 200, y: 100 },
+    { x: 200, y: 200 },
+    { x: 100, y: 200 },
+  ];
+  const s = {
+    id: "cross",
+    color: "#123456",
+    width: 3,
+    tool: "pen" as const,
+    points: [
+      { x: 50, y: 150, pressure: 0.5 },
+      { x: 250, y: 150, pressure: 0.5 },
+    ],
+  };
+  expect(intersectsLasso(s, polygon)).toBe(true);
+  expect(
+    intersectsLasso(
+      { ...s, points: s.points.map((p) => ({ ...p, y: 50 })) },
+      polygon,
+    ),
+  ).toBe(false);
+  expect(intersectsLasso(s, polygon.slice(0, 2))).toBe(false);
+});
