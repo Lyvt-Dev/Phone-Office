@@ -679,6 +679,7 @@ test("PDF-Arbeitsblatt lokal beschriften, sichern und als PDF wieder öffnen", a
     "PDF als neue Notizkopie geöffnet",
     { timeout: 30000 },
   );
+  await awaitSaved(page);
   const imagePixels = await page.evaluate(async () => {
     const pages = JSON.parse(
       localStorage.getItem("phone-office.documents.v1")!,

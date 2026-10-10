@@ -6,7 +6,7 @@ Mehr Platz fürs Blatt und direkter erreichbare Schreibwerkzeuge, inspiriert von
 - Halten am Strichende für 650 ms begradigt den Strich; deaktivierbar. Rückgängig erhält den vorherigen Zustand.
 - Auswahl folgt beim Ziehen als Live-Vorschau; erst Loslassen speichert. Abbruch lässt die ursprüngliche Position bestehen. Neue freie Lasso-Auswahl und Einfärben ausgewählter Striche.
 - Kompaktere Dokument- und Werkzeugleiste, Fokusmodus, weiter nutzbare Zwei-Finger-Zoomfunktion, Seitenübersicht, Lesezeichen, PDF-Notizen und lokale Wiederherstellung.
-- Android: Exportordner über die System-Dateiauswahl freigeben und neue PDF/.pnote-Exporte gesammelt erkennen. Unterordner werden geprüft, bereits übernommene Inhalte übersprungen; vor Übernahme gibt es eine Vorschau/Auswahl. Keine private Samsung-Notes-Datenbank, keine automatische Samsung-Konvertierung und keine Hintergrundüberwachung. Samsung Notes muss weiterhin exportieren. Ordnerfreigabe ist widerrufbar.
+- Android: Exportordner über die System-Dateiauswahl freigeben und neue PDF/.pnote-Exporte gesammelt erkennen. Beim Öffnen des Assistenten wird der verbundene Ordner automatisch geprüft. Unterordner werden geprüft, bereits übernommene Inhalte übersprungen; vor Übernahme gibt es eine Vorschau/Auswahl. Keine private Samsung-Notes-Datenbank, keine automatische Samsung-Konvertierung und keine Hintergrundüberwachung. Samsung Notes muss weiterhin exportieren. Ordnerfreigabe ist widerrufbar.
 - Native iPhone/iPad-Geräte-IPA für persönliche Signierung und Installation mit **xtool**. Sie ist unsigniert; Apple-Zugang und Gerät sind für die lokale Installation erforderlich. [Anleitung](https://github.com/Lyvt-Dev/Phone-Office/blob/main/docs/IPAD-XTOOL.md).
 
 ## Downloads
