@@ -25,7 +25,6 @@ import {
   Minus,
   ZoomIn,
   Ruler,
-  Pencil,
   Maximize2,
   Minimize2,
   Lasso,
@@ -33,6 +32,7 @@ import {
 } from "lucide-react";
 import { PageOverview } from "./PageOverview";
 import {
+  eraseStrokePart,
   clampZoom,
   intersectsSelection,
   intersectsLasso,
@@ -47,7 +47,6 @@ import {
   strokePath,
   strokeOpacity,
   straightenStroke,
-  type PenStyle,
   touchesStroke,
   PAGE_WIDTH,
   PAGE_HEIGHT,
@@ -175,10 +174,25 @@ export function NotebookEditor({
     saveZoom(z);
   };
   const [settings, setSettings] = useState(false);
+  const [toolSettings, setToolSettings] = useState<
+    "pen" | "marker" | "eraser" | null
+  >(null);
+  const barrel = useRef(false);
+  useEffect(() => {
+    const listener = (event: Event) => {
+      barrel.current = (event as CustomEvent).detail === true;
+    };
+    window.addEventListener("phone-office-stylus-button", listener);
+    return () =>
+      window.removeEventListener("phone-office-stylus-button", listener);
+  }, []);
   const updatePreferences = (change: Partial<NotePreferences>) =>
     onChange({ ...notebook, preferences: { ...prefs, ...change } });
   const [erasedPage, setErasedPage] = useState<NotePage | null>(null);
   const [draft, setDraft] = useState<InkStroke | null>(null);
+  const [eraserCursor, setEraserCursor] = useState<ReturnType<
+    typeof inkPoint
+  > | null>(null);
   const [past, setPast] = useState<NotePage[]>([]),
     [future, setFuture] = useState<NotePage[]>([]);
   const pending = useRef<{
@@ -189,6 +203,7 @@ export function NotebookEditor({
     before: NotePage;
     erase: boolean;
     straight?: boolean;
+    lastErase?: ReturnType<typeof inkPoint>;
   } | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const page = notebook.pages[Math.min(index, notebook.pages.length - 1)];
@@ -197,6 +212,7 @@ export function NotebookEditor({
     pending.current = null;
     selecting.current = null;
     setDraft(null);
+    setEraserCursor(null);
     setErasedPage(null);
     setMovePreview(null);
     setRectangle(null);
@@ -268,7 +284,13 @@ export function NotebookEditor({
     if (pending.current) return; // Ignore palms and other pointers while a stroke is active.
     if (e.pointerType === "mouse" && e.button !== 0) return;
     e.preventDefault();
-    if (tool === "select" || tool === "move" || tool === "lasso") {
+    const temporaryErase =
+      e.pointerType === "pen" &&
+      (barrel.current || e.button === 5 || (e.buttons & (2 | 32)) !== 0);
+    if (
+      !temporaryErase &&
+      (tool === "select" || tool === "move" || tool === "lasso")
+    ) {
       selecting.current = {
         pointer: e.pointerId,
         pointerType: e.pointerType,
@@ -289,18 +311,20 @@ export function NotebookEditor({
       return;
     }
     if (
-      page.strokes.length >= 2000 ||
-      notebook.pages.reduce(
-        (sum, p) => sum + p.strokes.reduce((a, s) => a + s.points.length, 0),
-        0,
-      ) >= 197000
+      tool !== "eraser" &&
+      !temporaryErase &&
+      (page.strokes.length >= 2000 ||
+        notebook.pages.reduce(
+          (sum, p) => sum + p.strokes.reduce((a, s) => a + s.points.length, 0),
+          0,
+        ) >= 197000)
     ) {
       onNotice(
         "Notizgrenze erreicht. Bitte sichern und ein weiteres Notizbuch anlegen.",
       );
       return;
     }
-    const erase = tool === "eraser" || e.button === 5 || (e.buttons & 32) !== 0;
+    const erase = tool === "eraser" || temporaryErase;
     const stroke: InkStroke | null = erase
       ? null
       : {
@@ -326,13 +350,54 @@ export function NotebookEditor({
   }
   function eraseAt(p: ReturnType<typeof inkPoint>) {
     const current = pending.current!;
-    current.page = {
-      ...current.page,
-      strokes: current.page.strokes.filter((s) => !touchesStroke(s, p)),
-    };
+    const radius = prefs.eraserSize || 16;
+    const previous = current.lastErase || p;
+    const steps = Math.max(
+      1,
+      Math.ceil(Math.hypot(p.x - previous.x, p.y - previous.y) / (radius / 2)),
+    );
+    let strokes = current.page.strokes;
+    for (let i = 1; i <= steps; i++) {
+      const center = inkPoint(
+        previous.x + ((p.x - previous.x) * i) / steps,
+        previous.y + ((p.y - previous.y) * i) / steps,
+        0.5,
+      );
+      strokes =
+        prefs.eraserMode === "partial"
+          ? strokes.flatMap((s) => eraseStrokePart(s, center, radius))
+          : strokes.filter((s) => !touchesStroke(s, center, radius));
+    }
+    const otherPoints = notebook.pages
+      .filter((p) => p.id !== page.id)
+      .reduce(
+        (n, p) => n + p.strokes.reduce((n, s) => n + s.points.length, 0),
+        0,
+      );
+    if (
+      strokes.length > 2000 ||
+      strokes.some((s) => s.points.length > 3000) ||
+      otherPoints + strokes.reduce((n, s) => n + s.points.length, 0) > 200000
+    ) {
+      onNotice(
+        "Teilradierer hat die Notizgrenze erreicht. Bitte ganze Striche radieren oder eine neue Seite verwenden.",
+      );
+      return;
+    }
+    current.lastErase = p;
+    current.page = { ...current.page, strokes };
     setErasedPage(current.page);
   }
   function move(e: PointerEvent<SVGSVGElement>) {
+    if (e.pointerType !== "touch")
+      setEraserCursor(
+        tool === "eraser" ||
+          barrel.current ||
+          (e.pointerType === "pen" && (e.buttons & (2 | 32)) !== 0) ||
+          pending.current?.erase
+          ? position(e)
+          : null,
+      );
     const prior = fingers.current.get(e.pointerId);
     if (prior) {
       fingers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -396,6 +461,21 @@ export function NotebookEditor({
     const samples = e.nativeEvent.getCoalescedEvents?.() || [];
     for (const ev of samples.length ? samples : [e.nativeEvent]) {
       const p = position(e, ev);
+      if (
+        !cur.erase &&
+        e.pointerType === "pen" &&
+        (barrel.current || (e.buttons & (2 | 32)) !== 0)
+      ) {
+        if (cur.stroke)
+          cur.page = {
+            ...cur.page,
+            strokes: [...cur.page.strokes, cur.stroke],
+          };
+        cur.stroke = null;
+        cur.erase = true;
+        clearHold();
+        setDraft(null);
+      }
       if (cur.erase) eraseAt(p);
       else if (cur.stroke && cur.stroke.points.length < 3000) {
         const last = cur.stroke.points.at(-1)!;
@@ -553,7 +633,17 @@ export function NotebookEditor({
                 aria-label={label}
                 title={label}
                 aria-pressed={tool === t}
-                onClick={() => setTool(t)}
+                onClick={() => {
+                  if (
+                    tool === t &&
+                    (t === "pen" || t === "marker" || t === "eraser")
+                  )
+                    setToolSettings(t);
+                  else {
+                    setTool(t);
+                    setToolSettings(null);
+                  }
+                }}
               >
                 <Icon aria-hidden="true" />
                 {(t === "pen" || t === "marker") && (
@@ -586,73 +676,35 @@ export function NotebookEditor({
           >
             <Redo2 aria-hidden="true" />
           </button>
-          <div
-            className="pen-quickbar"
-            role="toolbar"
-            aria-label="Stiftoptionen"
-          >
-            <label className="pen-style-picker">
-              <Pencil size={18} aria-hidden="true" />
-              <select
-                aria-label="Stiftart"
-                value={prefs.penStyle || "fountain"}
-                onChange={(e) => {
-                  updatePreferences({ penStyle: e.target.value as PenStyle });
-                  setTool("pen");
-                }}
-              >
-                <option value="ballpoint">Kugelschreiber</option>
-                <option value="fountain">Füller</option>
-                <option value="pencil">Bleistift</option>
-              </select>
-            </label>
-            <span className="ink-tool-divider" />
-            {[2, 3, 6].map((w) => (
-              <button
-                key={w}
-                className="note-icon width-choice"
-                aria-label={`Strichstärke ${w}`}
-                aria-pressed={width === w}
-                onClick={() => updatePreferences({ width: w })}
-              >
-                <i
-                  style={{ height: w, width: 20, background: "currentColor" }}
+          {(tool === "pen" || tool === "marker" || tool === "line") && (
+            <div
+              className="pen-quickbar"
+              role="toolbar"
+              aria-label="Stiftoptionen"
+            >
+              {["#26322f", "#2563eb", "#ef4444", "#16a34a", "#8b5cf6"].map(
+                (c) => (
+                  <button
+                    key={c}
+                    className="note-icon color-choice"
+                    aria-label={`Stiftfarbe ${c}`}
+                    aria-pressed={color === c}
+                    onClick={() => updatePreferences({ color: c })}
+                  >
+                    <i style={{ background: c }} />
+                  </button>
+                ),
+              )}
+              <label className="custom-ink" title="Eigene Stiftfarbe">
+                <input
+                  aria-label="Eigene Stiftfarbe"
+                  type="color"
+                  value={color}
+                  onChange={(e) => updatePreferences({ color: e.target.value })}
                 />
-              </button>
-            ))}
-            <span className="ink-tool-divider" />
-            {["#26322f", "#2563eb", "#ef4444", "#16a34a", "#8b5cf6"].map(
-              (c) => (
-                <button
-                  key={c}
-                  className="note-icon color-choice"
-                  aria-label={`Stiftfarbe ${c}`}
-                  aria-pressed={color === c}
-                  onClick={() => updatePreferences({ color: c })}
-                >
-                  <i style={{ background: c }} />
-                </button>
-              ),
-            )}
-            <label className="custom-ink" title="Eigene Stiftfarbe">
-              <input
-                aria-label="Eigene Stiftfarbe"
-                type="color"
-                value={color}
-                onChange={(e) => updatePreferences({ color: e.target.value })}
-              />
-            </label>
-            <label className="hold-toggle">
-              <input
-                type="checkbox"
-                checked={prefs.holdStraight !== false}
-                onChange={(e) =>
-                  updatePreferences({ holdStraight: e.target.checked })
-                }
-              />
-              Halten → Gerade
-            </label>
-          </div>
+              </label>
+            </div>
+          )}
         </div>
         <button
           className="note-icon ink-settings-trigger"
@@ -824,8 +876,9 @@ export function NotebookEditor({
           }}
         />
       )}
-      {settings && (
+      {(settings || toolSettings) && (
         <NoteSettings
+          mode={toolSettings || "page"}
           notebook={notebook}
           page={page}
           preferences={prefs}
@@ -836,7 +889,10 @@ export function NotebookEditor({
           }}
           onSubject={(subject) => onChange({ ...notebook, subject })}
           onPaper={(paper) => commit({ ...page, paper })}
-          onClose={() => setSettings(false)}
+          onClose={() => {
+            setSettings(false);
+            setToolSettings(null);
+          }}
           onExportPage={() => onExportPage(page)}
           onPreview={onPreview}
           onMoreExports={onMoreExports}
@@ -854,6 +910,7 @@ export function NotebookEditor({
           style={{ width: `${zoom}%` }}
           onPointerDown={down}
           onPointerMove={move}
+          onPointerLeave={() => setEraserCursor(null)}
           onPointerUp={(e) => end(e)}
           onPointerCancel={(e) => end(e, true)}
           onLostPointerCapture={(e) => end(e, true)}
@@ -921,6 +978,17 @@ export function NotebookEditor({
               fill="#2563eb18"
               stroke="#2563eb"
               strokeDasharray="8 5"
+              pointerEvents="none"
+            />
+          )}
+          {eraserCursor && (
+            <circle
+              cx={eraserCursor.x}
+              cy={eraserCursor.y}
+              r={prefs.eraserSize || 16}
+              fill="rgba(255,255,255,.3)"
+              stroke="#174e43"
+              strokeWidth={1.5}
               pointerEvents="none"
             />
           )}

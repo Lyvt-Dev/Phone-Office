@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+const { version } = JSON.parse(
+  readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
+);
 import { awaitSaved } from "./persistence";
 import { readFile } from "node:fs/promises";
 import { test, expect, type Page } from "@playwright/test";
@@ -288,8 +292,12 @@ test("Notizeinstellungen bleiben erhalten und schließen mit Escape", async ({
     exact: true,
   });
   await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Stift", exact: true }).click();
   await page.getByRole("button", { name: "Blau", exact: true }).click();
   await page.getByLabel("Strichstärke", { exact: true }).selectOption("6");
+  await page.keyboard.press("Escape");
+  await trigger.click();
   await page.getByLabel("Notizzoom", { exact: true }).selectOption("125");
   await page.getByRole("checkbox", { name: "Mit Finger zeichnen" }).check();
   await page.keyboard.press("Escape");
@@ -306,12 +314,16 @@ test("Notizeinstellungen bleiben erhalten und schließen mit Escape", async ({
     .getByRole("button", { name: /Unbenannte Notiz.*Notizseiten/ })
     .click();
   await trigger.click();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Stift", exact: true }).click();
   await expect(page.getByLabel("Stiftfarbe", { exact: true })).toHaveValue(
     "#2563eb",
   );
   await expect(page.getByLabel("Strichstärke", { exact: true })).toHaveValue(
     "6",
   );
+  await page.keyboard.press("Escape");
+  await trigger.click();
   await expect(page.getByLabel("Notizzoom", { exact: true })).toHaveValue(
     "125",
   );
@@ -638,9 +650,7 @@ test("PDF-Arbeitsblatt lokal beschriften, sichern und als PDF wieder öffnen", a
     { timeout: 30000 },
   );
   await expect(page.locator(".ink-sheet image")).toHaveCount(1);
-  await page
-    .getByRole("button", { name: "Notizeinstellungen", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Stift", exact: true }).click();
   await page.getByRole("button", { name: "Violett", exact: true }).click();
   await page.getByRole("button", { name: "Fertig", exact: true }).click();
   await draw(page);
@@ -738,7 +748,7 @@ test("Samsung-Übertragung prüft Dateien und übernimmt mehrere Notizen als neu
       .getByRole("button", { name: "Menü öffnen", exact: true })
       .click();
   await expect(page.locator(".sidebar-version")).toContainText(
-    "Phone Office 0.6.0",
+    `Phone Office ${version}`,
   );
   await page
     .getByRole("button", { name: "Samsung Notes importieren", exact: true })

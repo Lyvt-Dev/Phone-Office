@@ -30,6 +30,8 @@ export interface NotePreferences {
   zoom: number;
   penStyle?: PenStyle;
   holdStraight?: boolean;
+  eraserMode?: "stroke" | "partial";
+  eraserSize?: number;
 }
 export const defaultNotePreferences: NotePreferences = {
   color: "#26322f",
@@ -38,6 +40,8 @@ export const defaultNotePreferences: NotePreferences = {
   zoom: 100,
   penStyle: "fountain",
   holdStraight: true,
+  eraserMode: "stroke",
+  eraserSize: 16,
 };
 export interface Notebook {
   version: 1;
@@ -74,6 +78,10 @@ export function isNotebook(value: unknown): value is Notebook {
           ["ballpoint", "fountain", "pencil"].includes(
             n.preferences.penStyle,
           )) &&
+        (n.preferences.eraserMode === undefined ||
+          ["stroke", "partial"].includes(n.preferences.eraserMode)) &&
+        (n.preferences.eraserSize === undefined ||
+          [8, 16, 32].includes(n.preferences.eraserSize)) &&
         (n.preferences.holdStraight === undefined ||
           typeof n.preferences.holdStraight === "boolean"))) &&
     typeof n.subject === "string" &&

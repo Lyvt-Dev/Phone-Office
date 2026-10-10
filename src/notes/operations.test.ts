@@ -143,3 +143,51 @@ it("wählt mit einem Lasso auch kreuzende Segmente zwischen Messpunkten aus", as
   ).toBe(false);
   expect(intersectsLasso(s, polygon.slice(0, 2))).toBe(false);
 });
+
+import { eraseStrokePart } from "./operations";
+it("Teilradierer trennt lange Segmente exakt, ohne die Lücke zu verbinden", () => {
+  const s = {
+    ...stroke,
+    points: [
+      { x: 0, y: 100, pressure: 0.2 },
+      { x: 200, y: 100, pressure: 0.8 },
+    ],
+  };
+  const pieces = eraseStrokePart(s, { x: 100, y: 100 }, 16);
+  expect(pieces).toHaveLength(2);
+  expect(pieces[0].points.at(-1)!.x).toBeCloseTo(82.5);
+  expect(pieces[1].points[0].x).toBeCloseTo(117.5);
+  expect(pieces[0].points.at(-1)!.pressure).toBeCloseTo(0.4475);
+  expect(new Set(pieces.map((p) => p.id)).size).toBe(2);
+  expect(s.points).toHaveLength(2);
+  expect(eraseStrokePart(s, { x: 100, y: 300 }, 16)).toEqual([s]);
+});
+it("Teilradierer entfernt Punkte und volle Segmente, bewahrt Metadaten und gültige Speicherung", () => {
+  const dot = { ...stroke, points: [{ x: 100, y: 100, pressure: 0.7 }] };
+  expect(eraseStrokePart(dot, { x: 100, y: 100 }, 8)).toEqual([]);
+  const small = {
+    ...dot,
+    points: [
+      { x: 99, y: 100, pressure: 0.7 },
+      { x: 101, y: 100, pressure: 0.7 },
+    ],
+  };
+  expect(eraseStrokePart(small, { x: 100, y: 100 }, 8)).toEqual([]);
+  const n = newNotebook();
+  n.preferences = {
+    color: "#123456",
+    width: 3,
+    finger: false,
+    zoom: 100,
+    eraserMode: "partial",
+    eraserSize: 32,
+  };
+  n.pages[0].strokes = eraseStrokePart(stroke, { x: 300, y: 400 }, 32);
+  expect(isNotebook(n)).toBe(true);
+  expect(
+    isNotebook({ ...n, preferences: { ...n.preferences, eraserSize: NaN } }),
+  ).toBe(false);
+  expect(
+    isNotebook({ ...n, preferences: { ...n.preferences, eraserMode: "fake" } }),
+  ).toBe(false);
+});

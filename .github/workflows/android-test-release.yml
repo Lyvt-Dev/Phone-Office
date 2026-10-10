@@ -1,4 +1,4 @@
-name: Android Test APK
+name: Phone Office Release
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
       - "v*-android-test*"
       - "v0.5.0"
       - "v0.6.0"
+      - "v0.7.0"
   workflow_dispatch:
 
 permissions:
@@ -76,37 +77,43 @@ jobs:
           printf 'PHONE_OFFICE_DEBUG_KEYSTORE=%s\n' "$key_store" >> "$GITHUB_ENV"
           keytool -exportcert -keystore "$key_store" -storepass android -alias androiddebugkey -file "$RUNNER_TEMP/android-test-certificate.der"
           sha256sum "$RUNNER_TEMP/android-test-certificate.der"
-      - name: Assemble signed debug APK
+      - name: Assemble signed release APK
         env:
           PHONE_OFFICE_VERSION_CODE: ${{ github.run_number }}
         working-directory: android
-        run: bash gradlew --no-daemon --max-workers=2 assembleDebug
+        run: bash gradlew --no-daemon --max-workers=2 assembleRelease
       - name: Verify and package APK
         run: |
           mkdir -p artifacts
           (cd dist && zip -qr ../artifacts/phone-office-web-ipad.zip .)
-          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/phone-office-android-test.apk
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs artifacts/phone-office-android-test.apk > artifacts/signature.txt
+          cp android/app/build/outputs/apk/release/app-release.apk artifacts/phone-office-android.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs artifacts/phone-office-android.apk > artifacts/signature.txt
           expected=$(sha256sum "$RUNNER_TEMP/android-test-certificate.der" | cut -d ' ' -f 1)
           actual=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' artifacts/signature.txt)
           test "$actual" = "$expected"
+          test "$actual" = "aa73f1f19ec9b8428b026a2a6876ce2b8ef019a90d906608b67ca19857906b85"
           printf 'Certificate SHA256: %s\n' "$actual" > artifacts/signing-identity.txt
           printf 'Signing cache restored: %s\n' '${{ steps.signing-cache.outputs.cache-hit }}' >> artifacts/signing-identity.txt
           echo "::notice title=Android test signing identity::$actual; cache restored: ${{ steps.signing-cache.outputs.cache-hit }}"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging artifacts/phone-office-android-test.apk > artifacts/package-info.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging artifacts/phone-office-android.apk > artifacts/package-info.txt
           grep "package: name='dev.lyvt.phoneoffice.debug'" artifacts/package-info.txt
-          grep 'application-debuggable' artifacts/package-info.txt
+          if grep -q 'application-debuggable' artifacts/package-info.txt; then
+            echo 'Refusing a debuggable release'
+            exit 1
+          fi
+          grep "application-label:'Phone Office'" artifacts/package-info.txt
+          grep "versionName='0.7.0'" artifacts/package-info.txt
           if grep -q 'application-testOnly' artifacts/package-info.txt; then
             echo 'Refusing an APK that requires adb install -t'
             exit 1
           fi
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump xmltree artifacts/phone-office-android-test.apk AndroidManifest.xml > artifacts/manifest-info.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump xmltree artifacts/phone-office-android.apk AndroidManifest.xml > artifacts/manifest-info.txt
           if grep -q 'android:testOnly' artifacts/manifest-info.txt; then
             echo 'Refusing testOnly manifest flag for file-based installation'
             exit 1
           fi
           cd artifacts
-          sha256sum phone-office-android-test.apk phone-office-web-ipad.zip > SHA256SUMS.txt
+          sha256sum phone-office-android.apk phone-office-web-ipad.zip > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
           name: phone-office-android-test
@@ -174,10 +181,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "$GITHUB_REF_NAME" = "v0.6.0" ]; then
-            gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android-test.apk artifacts/phone-office-web-ipad.zip artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt artifacts-ipad/phone-office-ios-unsigned.ipa artifacts-ipad/SHA256SUMS-ios.txt artifacts-ipad/ios-build-info.txt --repo "$GITHUB_REPOSITORY" --verify-tag --title "Phone Office 0.6.0" --notes-file docs/RELEASE-0.6.0.md
+          if [ "$GITHUB_REF_NAME" = "v0.7.0" ]; then
+            gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android.apk artifacts/phone-office-web-ipad.zip artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt artifacts-ipad/phone-office-ios-unsigned.ipa artifacts-ipad/SHA256SUMS-ios.txt artifacts-ipad/ios-build-info.txt --repo "$GITHUB_REPOSITORY" --verify-tag --title "Phone Office 0.7.0" --notes-file docs/RELEASE-0.7.0.md
+          elif [ "$GITHUB_REF_NAME" = "v0.6.0" ]; then
+            gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android.apk artifacts/phone-office-web-ipad.zip artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt artifacts-ipad/phone-office-ios-unsigned.ipa artifacts-ipad/SHA256SUMS-ios.txt artifacts-ipad/ios-build-info.txt --repo "$GITHUB_REPOSITORY" --verify-tag --title "Phone Office 0.6.0" --notes-file docs/RELEASE-0.6.0.md
           elif [ "$GITHUB_REF_NAME" = "v0.5.0" ]; then
-            gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android-test.apk artifacts/phone-office-web-ipad.zip artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt --repo "$GITHUB_REPOSITORY" --verify-tag --title "Phone Office 0.5.0" --notes-file docs/RELEASE-0.5.0.md
+            gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android.apk artifacts/phone-office-web-ipad.zip artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt --repo "$GITHUB_REPOSITORY" --verify-tag --title "Phone Office 0.5.0" --notes-file docs/RELEASE-0.5.0.md
           else
-            gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android-test.apk artifacts/phone-office-web-ipad.zip artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt --repo "$GITHUB_REPOSITORY" --verify-tag --prerelease --title "Phone Office Android-Test $GITHUB_REF_NAME" --notes-file docs/ANDROID-TEST-RELEASE.md
+            gh release create "$GITHUB_REF_NAME" artifacts/phone-office-android.apk artifacts/phone-office-web-ipad.zip artifacts/SHA256SUMS.txt artifacts/signature.txt artifacts/package-info.txt artifacts/signing-identity.txt --repo "$GITHUB_REPOSITORY" --verify-tag --prerelease --title "Phone Office Android-Test $GITHUB_REF_NAME" --notes-file docs/ANDROID-TEST-RELEASE.md
           fi

@@ -142,3 +142,65 @@ export function intersectsLasso(
     });
   });
 }
+
+// Clip each segment against the eraser circle; interpolate pressure at cut edges.
+// Separate fragments receive independent IDs so no erased gap can reconnect.
+export function eraseStrokePart(
+  s: InkStroke,
+  center: { x: number; y: number },
+  radius: number,
+): InkStroke[] {
+  const radiusSquared = (radius + s.width / 2) ** 2;
+  const inside = (p: { x: number; y: number }) =>
+    (p.x - center.x) ** 2 + (p.y - center.y) ** 2 <= radiusSquared;
+  if (s.points.length === 1) return inside(s.points[0]) ? [] : [s];
+  const fragments: InkStroke["points"][] = [];
+  let fragment: InkStroke["points"] = [];
+  let changed = false;
+  const flush = () => {
+    if (fragment.length) fragments.push(fragment);
+    fragment = [];
+  };
+  for (let i = 1; i < s.points.length; i++) {
+    const a = s.points[i - 1],
+      b = s.points[i],
+      dx = b.x - a.x,
+      dy = b.y - a.y;
+    const A = dx * dx + dy * dy,
+      B = 2 * ((a.x - center.x) * dx + (a.y - center.y) * dy);
+    const C = (a.x - center.x) ** 2 + (a.y - center.y) ** 2 - radiusSquared;
+    const discriminant = B * B - 4 * A * C;
+    let lo = 1,
+      hi = 0;
+    if (A === 0) {
+      if (inside(a)) {
+        changed = true;
+        flush();
+        continue;
+      }
+    } else if (discriminant > 0) {
+      lo = Math.max(0, (-B - Math.sqrt(discriminant)) / (2 * A));
+      hi = Math.min(1, (-B + Math.sqrt(discriminant)) / (2 * A));
+    }
+    const point = (t: number) => ({
+      x: a.x + t * dx,
+      y: a.y + t * dy,
+      pressure: a.pressure + t * (b.pressure - a.pressure),
+    });
+    if (lo < hi) {
+      changed = true;
+      if (lo > 0) {
+        if (!fragment.length) fragment.push(a);
+        fragment.push(point(lo));
+      }
+      flush();
+      if (hi < 1) fragment = [point(hi), b];
+    } else {
+      if (!fragment.length) fragment.push(a);
+      fragment.push(b);
+    }
+  }
+  flush();
+  if (!changed) return [s];
+  return fragments.map((points) => ({ ...s, id: crypto.randomUUID(), points }));
+}

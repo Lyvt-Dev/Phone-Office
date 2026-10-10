@@ -43,7 +43,9 @@ test.beforeEach(async ({ page }) => {
 test("Stiftarten, Halten zum Begradigen und erneutes Öffnen", async ({
   page,
 }) => {
-  await page.getByLabel("Stiftart", { exact: true }).selectOption("pencil");
+  await page.getByRole("button", { name: "Stift", exact: true }).click();
+  await page.getByLabel("Stiftart in Einstellungen").selectOption("pencil");
+  await page.getByRole("button", { name: "Fertig", exact: true }).click();
   await pointer(page, "pointerdown", 40, 70, 0.2);
   await pointer(page, "pointermove", 70, 90, 0.4);
   await pointer(page, "pointermove", 120, 75, 0.8);
@@ -61,7 +63,9 @@ test("Stiftarten, Halten zum Begradigen und erneutes Öffnen", async ({
     "opacity",
     "0.65",
   );
-  await page.getByLabel("Stiftart", { exact: true }).selectOption("ballpoint");
+  await page.getByRole("button", { name: "Stift", exact: true }).click();
+  await page.getByLabel("Stiftart in Einstellungen").selectOption("ballpoint");
+  await page.getByRole("button", { name: "Fertig", exact: true }).click();
   await pointer(page, "pointerdown", 40, 130, 0.2);
   await pointer(page, "pointermove", 120, 135, 0.9);
   await pointer(page, "pointerup", 120, 135);

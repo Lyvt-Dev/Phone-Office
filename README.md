@@ -66,3 +66,7 @@ Ab 0.4: kompakte Querformatansicht, Icon-Werkzeuge, separate Notizeinstellungen 
 Die iPad-Auslieferung ist für 0.5 zunächst zurückgestellt; der Pages-Workflow ist manuell startbar, sobald GitHub Pages konfiguriert wurde. Android bleibt der Release-Schwerpunkt.
 
 0.6 ergänzt Kugelschreiber/Füller/Bleistift, Halten-zum-Begradigen, freie Lasso-Auswahl, Live-Vorschau beim Verschieben und einen kompakten Fokusmodus. Android kann einen ausdrücklich freigegebenen Samsung-Exportordner nach neuen PDF/.pnote-Dateien durchsuchen. Die native Geräte-IPA wird für lokale Installation mit xtool bereitgestellt: [Release 0.6](docs/RELEASE-0.6.0.md), [xtool-Anleitung](docs/IPAD-XTOOL.md). Keine private Samsung-Datenbank oder vollständige GoodNotes-Parität.
+
+## Phone Office 0.7.0
+
+Werkzeuge mit eigenen Einstellungen per zweitem Tipp, Teilradierer mit Größenwahl, lokale Stylustasten-Anbindung und eine übersichtlichere Bibliothek. Android wird als nicht debuggbarer Release-Build mit dem Namen Phone Office erstellt; die bisherige Update-Identität bleibt erhalten. [Release und Grenzen](docs/RELEASE-0.7.0.md), [Prüfumfang](docs/VALIDATION-0.7.0.md).

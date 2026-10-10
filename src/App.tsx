@@ -491,6 +491,7 @@ export default function App() {
   }
   const filtered = docs
     .filter((d) => section !== "notes" || !!d.notebook)
+    .filter((d) => section !== "text" || !d.notebook)
     .filter((d) =>
       [
         d.title,
@@ -649,7 +650,7 @@ export default function App() {
               setSidebar(false);
             }}
           >
-            <Clock3 size={19} /> Zuletzt geöffnet <span>{docs.length}</span>
+            <Clock3 size={19} /> Bibliothek <span>{docs.length}</span>
           </button>
           <button
             className={section === "notes" ? "nav-item active" : "nav-item"}
@@ -740,9 +741,7 @@ export default function App() {
               </>
             ) : (
               <>
-                <span>Arbeitsplatz</span>
-                <span className="slash">/</span>
-                <strong>Dokumente</strong>
+                <strong>Phone Office</strong>
               </>
             )}
           </div>
@@ -763,22 +762,10 @@ export default function App() {
           <div className="dashboard">
             <div className="intro">
               <div>
-                <h1>Deine Dokumente</h1>
-                <p>Lokal öffnen, bearbeiten und als neue Datei speichern.</p>
+                <h1>Dein Arbeitsplatz</h1>
+                <p>Notizen und Dokumente. Lokal gespeichert.</p>
               </div>
             </div>
-            {!native && (
-              <aside className="install-tip">
-                <img className="app-logo" src="./icons/icon-192.png" alt="" />
-                <p>
-                  <strong>Auch auf deinem iPad</strong>
-                  <br />
-                  In Safari: Teilen → Zum Home-Bildschirm. Nach dem ersten
-                  vollständigen Laden offline nutzbar. Notizbücher regelmäßig
-                  als .pnote sichern; Browserdaten können gelöscht werden.
-                </p>
-              </aside>
-            )}
             <section className="quick-actions">
               <button className="quick-card create" onClick={newNote}>
                 <span className="quick-icon">
@@ -818,6 +805,38 @@ export default function App() {
                 <ArrowRight size={20} />
               </button>
             </section>
+            <div
+              className="library-tabs"
+              role="group"
+              aria-label="Bibliothek filtern"
+            >
+              {[
+                ["recent", "Alle Dateien"],
+                ["notes", "Schulnotizen"],
+                ["text", "Textdokumente"],
+              ].map(([id, label]) => (
+                <button
+                  key={id}
+                  aria-pressed={
+                    section === id || (id === "recent" && section === "all")
+                  }
+                  onClick={() => setSection(id)}
+                >
+                  {label}
+                  <span>
+                    {
+                      docs.filter((d) =>
+                        id === "notes"
+                          ? !!d.notebook
+                          : id === "text"
+                            ? !d.notebook
+                            : true,
+                      ).length
+                    }
+                  </span>
+                </button>
+              ))}
+            </div>
             <section className="documents-section">
               <div className="section-head">
                 <div>
@@ -826,10 +845,14 @@ export default function App() {
                       ? "Deine Dokumente"
                       : section === "notes"
                         ? "Schulnotizen"
-                        : "Alle Dokumente"}{" "}
-                    <span>{docs.length}</span>
+                        : section === "text"
+                          ? "Textdokumente"
+                          : "Alle Dokumente"}{" "}
+                    <span>{filtered.length}</span>
                   </h2>
-                  <p>Nur deine erstellten und importierten Dateien.</p>
+                  <p>
+                    Zuletzt bearbeitet zuerst · auf deinem Gerät gespeichert
+                  </p>
                 </div>
                 <div className="document-controls">
                   <label className="search">
@@ -936,8 +959,14 @@ export default function App() {
                       ? "Versuche einen anderen Suchbegriff."
                       : "Erstelle dein erstes Dokument oder öffne eine Datei."}
                   </p>
-                  <button className="text-button" onClick={() => newDoc()}>
-                    Neues Dokument erstellen <ArrowRight size={15} />
+                  <button
+                    className="text-button"
+                    onClick={() => (section === "notes" ? newNote() : newDoc())}
+                  >
+                    {section === "notes"
+                      ? "Neue Schulnotiz erstellen"
+                      : "Neues Dokument erstellen"}{" "}
+                    <ArrowRight size={15} />
                   </button>
                 </div>
               )}

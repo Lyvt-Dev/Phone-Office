@@ -3367,3 +3367,145 @@ footer button {
   padding: env(safe-area-inset-top) env(safe-area-inset-right)
     env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
+
+/* 0.7: quiet library, three clear starting actions, focused tool dialogs. */
+.dashboard {
+  max-width: 1420px;
+  margin: 0 auto;
+}
+.dashboard .intro {
+  margin-bottom: 24px;
+}
+.dashboard .quick-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.dashboard .quick-card {
+  min-height: 100px;
+  border-radius: 18px;
+  box-shadow: none;
+}
+.dashboard .quick-card p {
+  font-size: 13px;
+}
+.library-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 28px 0 20px;
+}
+.library-tabs button {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--surface);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.library-tabs button[aria-pressed="true"] {
+  background: #174e43;
+  color: white;
+  border-color: #174e43;
+}
+.library-tabs span {
+  font-size: 12px;
+  opacity: 0.75;
+}
+.dashboard .document-card {
+  border-radius: 16px;
+  box-shadow: none;
+  overflow: hidden;
+}
+.dashboard .document-preview {
+  height: 180px;
+}
+.sidebar .privacy-card {
+  display: none;
+}
+.pen-quickbar {
+  gap: 2px;
+}
+@media (max-width: 700px) {
+  .dashboard .quick-actions {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .dashboard .quick-card {
+    min-height: 72px;
+    padding: 12px 16px;
+  }
+  .dashboard .quick-card p {
+    margin-top: 3px;
+  }
+  .dashboard .quick-icon {
+    width: 42px;
+    height: 42px;
+  }
+  .library-tabs {
+    gap: 6px;
+    margin: 20px 0 16px;
+  }
+  .library-tabs button {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .dashboard .document-preview {
+    height: 145px;
+  }
+}
+
+@media (max-width: 700px) {
+  .dashboard .intro {
+    min-height: 0;
+    margin-bottom: 18px;
+  }
+  .dashboard .intro h1 {
+    font-size: 26px;
+  }
+  .dashboard .intro p {
+    font-size: 14px;
+    margin-bottom: 0;
+  }
+  .dashboard .quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dashboard .quick-card {
+    gap: 10px;
+    padding: 12px;
+    min-height: 78px;
+  }
+  .dashboard .quick-card strong {
+    font-size: 14px;
+  }
+  .dashboard .quick-card p,
+  .dashboard .quick-card > svg {
+    display: none;
+  }
+  .dashboard .quick-icon {
+    width: 32px;
+    height: 36px;
+  }
+  .dashboard .quick-card.import {
+    grid-column: 1/-1;
+    min-height: 56px;
+  }
+  .library-tabs {
+    flex-wrap: nowrap;
+    overflow: auto;
+    margin: 20px 0 16px;
+  }
+  .library-tabs button {
+    flex-shrink: 0;
+    font-size: 12px;
+    padding: 8px 10px;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .dashboard .section-head p {
+    font-size: 12px;
+  }
+}
