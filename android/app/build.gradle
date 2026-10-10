@@ -1,5 +1,21 @@
 apply plugin: 'com.android.application'
 
+// Existing APK users retain their package and signing identity by default.
+def productionChannel = System.getenv("PHONE_OFFICE_CHANNEL") == "production"
+def releaseKeyPath = System.getenv("PHONE_OFFICE_RELEASE_KEYSTORE")
+if (productionChannel) {
+    ["PHONE_OFFICE_RELEASE_KEYSTORE", "PHONE_OFFICE_RELEASE_STORE_PASSWORD", "PHONE_OFFICE_RELEASE_KEY_ALIAS", "PHONE_OFFICE_RELEASE_KEY_PASSWORD", "PHONE_OFFICE_VERSION_CODE"].each { name ->
+        if (!System.getenv(name)) throw new GradleException("Production build requires " + name)
+    }
+    if (!file(releaseKeyPath).isFile()) throw new GradleException("Production signing keystore not found")
+    if (System.getenv("PHONE_OFFICE_VERSION_CODE").toInteger() <= 0) throw new GradleException("Production version code must be positive")
+    def signingStore = java.security.KeyStore.getInstance(file(releaseKeyPath), System.getenv("PHONE_OFFICE_RELEASE_STORE_PASSWORD").toCharArray())
+    def certificate = signingStore.getCertificate(System.getenv("PHONE_OFFICE_RELEASE_KEY_ALIAS"))
+    if (!certificate || !signingStore.isKeyEntry(System.getenv("PHONE_OFFICE_RELEASE_KEY_ALIAS"))) throw new GradleException("Production key alias must contain a signing key")
+    if (certificate.subjectX500Principal.name.contains("CN=Android Debug")) throw new GradleException("Production builds reject Android debug certificates")
+    certificate.checkValidity()
+}
+
 android {
     namespace = "dev.lyvt.phoneoffice"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -8,7 +24,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode = (System.getenv("PHONE_OFFICE_VERSION_CODE") ?: "1").toInteger()
-        versionName "0.7.6"
+        versionName "0.7.7"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -17,6 +33,14 @@ android {
         }
     }
     signingConfigs {
+        if (productionChannel) {
+            production {
+                storeFile file(releaseKeyPath)
+                storePassword System.getenv("PHONE_OFFICE_RELEASE_STORE_PASSWORD")
+                keyAlias System.getenv("PHONE_OFFICE_RELEASE_KEY_ALIAS")
+                keyPassword System.getenv("PHONE_OFFICE_RELEASE_KEY_PASSWORD")
+            }
+        }
         debug {
             def configuredKey = System.getenv("PHONE_OFFICE_DEBUG_KEYSTORE")
             if (configuredKey) {
@@ -36,8 +60,8 @@ android {
             resValue "string", "title_activity_main", "Phone Office Test"
         }
         release {
-            applicationIdSuffix ".debug" // Preserve installed notebooks when updating older APKs.
-            signingConfig signingConfigs.debug
+            if (!productionChannel) applicationIdSuffix ".debug" // Preserve existing APK updates.
+            signingConfig productionChannel ? signingConfigs.production : signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

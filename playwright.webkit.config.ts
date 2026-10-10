@@ -3,6 +3,7 @@ export default defineConfig({
   testDir: "tests/e2e",
   testMatch: [
     "ipad-webkit.spec.ts",
+    "app-info.spec.ts",
     "notes-060.spec.ts",
     "notes-070.spec.ts",
     "notes-075.spec.ts",

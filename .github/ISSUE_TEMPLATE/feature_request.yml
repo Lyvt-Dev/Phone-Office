@@ -1,0 +1,15 @@
+name: Verbesserung vorschlagen
+description: Eine konkrete Verbesserung für Phone Office vorschlagen
+title: "[Idee] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Was möchtest du mit deinen Notizen erledigen?
+      description: Beschreibe das konkrete Problem und eine mögliche Verbesserung. Bitte keine vertraulichen Daten nennen.
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Gerät oder Plattform

@@ -13,7 +13,7 @@ export function useDialog(onClose: () => void) {
       if (e.key !== "Tab") return;
       const list = [
         ...(panel.current?.querySelectorAll<HTMLElement>(
-          'button:not(:disabled),input:not(:disabled):not([type="hidden"]),select:not(:disabled),textarea:not(:disabled),a[href],[tabindex="0"]',
+          'button:not(:disabled),input:not(:disabled):not([type="hidden"]),select:not(:disabled),textarea:not(:disabled),a[href],summary,[tabindex="0"]',
         ) || []),
       ].filter(
         (el) =>

@@ -1,0 +1,36 @@
+name: Fehler melden
+description: Probleme in Phone Office nachvollziehbar beschreiben
+title: "[Fehler] "
+body:
+  - type: markdown
+    attributes:
+      value: "Bitte keine privaten Dokumente, Passwörter oder personenbezogenen Daten hochladen. Nutze bei Bedarf ein anonymes Beispieldokument."
+  - type: input
+    id: version
+    attributes:
+      label: App-Version
+      description: In der Seitenleiste oder unter Über Phone Office sichtbar.
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Gerät und Betriebssystem
+      placeholder: "Beispiel: Galaxy Tab, Android-Version, gegebenenfalls Browser"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Schritte zum Fehler
+      description: Was hast du gemacht, was ist passiert und was hast du erwartet?
+    validations:
+      required: true
+  - type: dropdown
+    id: storage
+    attributes:
+      label: Sicherung der betroffenen Notizen
+      options:
+        - Keine Notizen betroffen
+        - .pnote-Sicherung vorhanden
+        - Noch keine Sicherung vorhanden

@@ -10,3 +10,5 @@ artifacts/
 .kotlin/
 
 public/pdfjs/
+
+public/third-party-notices.txt

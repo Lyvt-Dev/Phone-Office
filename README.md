@@ -2,6 +2,8 @@
 
 Lokale Notiz-App für Handschrift, Arbeitsblätter und getippten Text. Word-/LibreOffice-Dateien gehören zum zusätzlichen Office-Arbeitsbereich. Capacitor stellt Projekte für **Android und iOS** bereit; Electron ist die **Desktop-Hülle** und läuft selbst nicht auf diesen Mobilplattformen.
 
+**0.7.7:** Öffentlicher GitHub-Release, Creator Lyvt, lokale App-Informationen und Open-Source-Lizenzen. [Release](docs/RELEASE-0.7.7.md) · [Veröffentlichung](docs/PUBLIC-RELEASE.md).
+
 **0.7.6:** Haftnotizen auf dem Blatt, eigene Coverbilder, persönliche Akzente/Schriften/Größen und überarbeitete Dialoge. [Release](docs/RELEASE-0.7.6.md).
 
 **0.7.5:** Notizbücher und Handschrift sind der Kern, Word/LibreOffice der Zusatz. Neue Bibliothek mit Favoriten, Coverfarben, Fach-/Ordnergruppen und Papierkorb; Punktpapier, geometrische Striche und Bildnotizen. [Release](docs/RELEASE-0.7.5.md) · [Funktionsstand und weitere Schritte](docs/NOTES-FEATURES.md).

@@ -15,7 +15,10 @@ import { SamsungImport } from "./notes/SamsungImport";
 import { NotebookEditor } from "./notes/NotebookEditor";
 import { newNotebook, pageSvg, type NotePage } from "./notes/model";
 import { exportNote, importNote } from "./notes/format";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
+const AppInfo = lazy(() =>
+  import("./ui/AppInfo").then((m) => ({ default: m.AppInfo })),
+);
 import { Capacitor } from "@capacitor/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -172,6 +175,7 @@ export default function App() {
       ? "Wird lokal gespeichert …"
       : storedSaveStatus;
   const [sidebar, setSidebar] = useState(false);
+  const [appInfoOpen, setAppInfoOpen] = useState(false);
   const [find, setFind] = useState("");
   const [replace, setReplace] = useState("");
   const [page, setPage] = useState("A4");
@@ -836,6 +840,8 @@ export default function App() {
           <p className="sidebar-version">
             Phone Office {version}
             <br />
+            <span>Erstellt von Lyvt</span>
+            <br />
             <span>
               {native
                 ? Capacitor.getPlatform() === "ios"
@@ -854,7 +860,16 @@ export default function App() {
             <Palette size={22} /> App anpassen
           </button>
           <button className="nav-item" onClick={() => setModal("formats")}>
-            <Settings2 size={18} /> Formate & App-Info
+            <Settings2 size={18} /> Dateiformate
+          </button>
+          <button
+            className="nav-item"
+            onClick={() => {
+              setAppInfoOpen(true);
+              setSidebar(false);
+            }}
+          >
+            <ShieldCheck size={18} /> Über Phone Office
           </button>
           <button className="nav-item" onClick={() => setDark(!dark)}>
             {dark ? <Sun size={22} /> : <Moon size={22} />}{" "}
@@ -1297,6 +1312,11 @@ export default function App() {
           </button>
         </div>
       )}
+      {appInfoOpen && (
+        <Suspense fallback={<div role="status">App-Info wird geladen …</div>}>
+          <AppInfo onClose={() => setAppInfoOpen(false)} />
+        </Suspense>
+      )}
       {modal && (
         <div className="modal-backdrop" onClick={() => setModal(null)}>
           <section
@@ -1320,9 +1340,9 @@ export default function App() {
                 <div className="eyebrow">TRANSPARENT VON ANFANG AN</div>
                 <h2>Deine Dateien. Klare Grenzen.</h2>
                 <p>
-                  Phone Office verarbeitet Dokumente lokal. Der
-                  Android-Testbuild verwendet denselben Editor wie die
-                  Web-Version. Die Formatunterstützung hat folgende Grenzen.
+                  Phone Office verarbeitet Dokumente lokal. Der Android-Build
+                  verwendet denselben Editor wie die Web-Version. Die
+                  Formatunterstützung hat folgende Grenzen.
                 </p>
                 <div className="format-list">
                   {formatSupport.map((f) => (
