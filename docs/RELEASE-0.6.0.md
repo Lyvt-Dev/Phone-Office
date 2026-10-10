@@ -24,3 +24,5 @@ Kein vollständiger Ersatz aller GoodNotes-/Samsung-Notes-Funktionen: OCR, Audio
 Neue `.pnote`-Sicherungen verwenden Version 3, damit ältere Apps neue Stiftarten nicht unbemerkt verlieren. Sicherungen der Versionen 1 und 2 bleiben lesbar. Vor Update zusätzlich sichern; Dateien werden als neue Kopien importiert.
 
 Die Veröffentlichung setzt Unit-, Produktions-Browser-, ODF-Schema-, Android-Build- und iOS-Geräte-Build-Prüfungen voraus. Geräteabhängige Ordnerberechtigungen und Stiftverhalten bitte auf deinem Samsung/iPad testen.
+
+[Prüfnachweise und Gerätetest-Grenzen](https://github.com/Lyvt-Dev/Phone-Office/blob/main/docs/VALIDATION-0.6.0.md).

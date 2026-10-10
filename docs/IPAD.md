@@ -1,6 +1,8 @@
 # Phone Office auf dem iPad
 
-Die Auslieferung ist für 0.5 auf Nutzerwunsch zurückgestellt. Die folgenden Schritte sind für später vorbereitet. WebKit-Funktionstests wurden erfolgreich auf GitHub geprüft; die automatische Pages-Aktivierung scheiterte an fehlenden Token-Rechten. Der Web-Workflow startet deshalb vorerst nur manuell.
+**0.6: Für die native Geräte-IPA und Installation mit xtool siehe [IPAD-XTOOL.md](IPAD-XTOOL.md).** Der Release-Workflow kompiliert eine echte arm64-iPhone/iPad-App und verpackt sie zur persönlichen Signierung. Eine physische Installation bleibt ein gesonderter Gerätetest.
+
+Die Web-Auslieferung wurde für 0.5 auf Nutzerwunsch zurückgestellt. Die folgenden Schritte sind für später vorbereitet. WebKit-Funktionstests wurden erfolgreich auf GitHub geprüft; die automatische Pages-Aktivierung scheiterte an fehlenden Token-Rechten. Der Web-Workflow startet deshalb vorerst nur manuell.
 
 ## Ohne Developer-Konto: Browser-App
 

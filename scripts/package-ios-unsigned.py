@@ -11,7 +11,7 @@ def main():
     assert 'arm64' in info['UIRequiredDeviceCapabilities'], 'Wrong device architecture requirement'
     assert {1, 2}.issubset(set(info['UIDeviceFamily'])), f'Missing iPhone/iPad support: {info.get("UIDeviceFamily")!r}'
     executable = app / info['CFBundleExecutable']
-    subprocess.run(['lipo', '-verify_arch', 'arm64', str(executable)], check=True)
+    subprocess.run(['lipo', str(executable), '-verify_arch', 'arm64'], check=True)
     assert (app / 'public/index.html').is_file(), 'Missing offline editor'
     assert (app / 'public/pdfjs/standard_fonts').is_dir(), 'Missing local PDF fonts'
     assert not (app / 'embedded.mobileprovision').exists(), 'Personal provisioning must happen locally'
